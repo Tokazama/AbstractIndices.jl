@@ -1,0 +1,7 @@
+name = "AbstractIndices"
+uuid = "113fdce4-79f1-4c04-9e25-5fd3385cd3b1"
+authors = ["Tokazama <zchristensen7@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

@@ -1,25 +1,25 @@
 abstract type AbstractIndex{TA,TI,A,I} <: AbstractVector{TI} end
 
-Base.length(ai::AbstractIndex) = length(index(ai))
+Base.length(ai::AbstractIndex) = length(to_index(ai))
 
 Base.size(ai::AbstractIndex) = (length(ai),)
 
-Base.first(ai::AbstractIndex) = first(index(ai))
+Base.first(ai::AbstractIndex) = first(to_index(ai))
 
-Base.last(ai::AbstractIndex) = last(index(ai))
+Base.last(ai::AbstractIndex) = last(to_index(ai))
 
-Base.step(ai::AbstractIndex) = step(index(ai))
+Base.step(ai::AbstractIndex) = step(to_index(ai))
 
-Base.firstindex(ai::AbstractIndex) = first(axis(ai))
+Base.firstindex(ai::AbstractIndex) = first(to_axis(ai))
 
 """
     stepindex(x) -> Real
 
 Returns the step size of the index.
 """
-stepindex(ai::AbstractIndex) = step(axis(ai))
+stepindex(ai::AbstractIndex) = step(to_axis(ai))
 
-Base.lastindex(ai::AbstractIndex) = last(axis(ai))
+Base.lastindex(ai::AbstractIndex) = last(to_axis(ai))
 
 """
     to_axis(x)
@@ -66,8 +66,8 @@ function to_index(x::AbstractIndex{TA,TI,A,I}, inds::AbstractVector{TA}) where {
     map(i -> to_index(x, i), inds)
 end
 
-function to_index(x::AbstractIndex{TA,TI,<:AbstractRange,I}, i::AbstractRange{TA}) where {TA,TI,I}
-    to_index(r, first(inds)):round(Integer, step(inds) / step(r)):to_index(r, last(inds))
+function to_index(x::AbstractIndex{TA,TI,<:AbstractRange,I}, inds::AbstractRange{TA}) where {TA,TI,I}
+    to_index(x, first(inds)):round(Integer, step(inds) / step(x)):to_index(x, last(inds))
 end
 
 to_index(x::AbstractIndex, i::Colon) = to_index(x)
@@ -91,29 +91,22 @@ Returns the element type of the index associated with an `AbstractIndex`.
 indexeltype(::T) where {T<:AbstractIndex} = indextype(T)
 indexeltype(::Type{<:AbstractIndex{TA,TI,A,I}}) where {TA,TI,A,I} = TI
 
-"""
-    getindex
-"""
-getindex(x::AbstractIndex, i) = to_index(x, i)
 
-getindex(x::AbstractIndex, i::Colon) = x
+#Base.iterate(x::AbstractIndex) = first(to_index(x)), first(to_axis(x))
 
-
-iterate(x::AbstractIndex) = first(to_index(x)), first(to_axis(x))
-
-function iterate(x::AbstractIndex)
+function Base.iterate(x::AbstractIndex)
     idx, state = iterate(to_axis(x))
     @inbounds (idx, getindex(x, idx)), state
 end
 
-function iterate(x::AbstractIndex, state)
+function Base.iterate(x::AbstractIndex, state)
     nextstate = iterate(to_axis(x), state)
     _iterate(x, nextstate)
 end
 
 _iterate(x::AbstractIndex, ::Nothing) = nothing
 function _iterate(x::AbstractIndex, state::Tuple{TA,S}) where {TA,S}
-    @inbounds getindex(to_index(x, first(state)), laste(state))
+    @inbounds getindex(to_index(x, first(state)), last(state))
 end
 
 
@@ -133,7 +126,7 @@ function Base.show(
     show_rows(io, x, inds, row_name_separator)
 end
 
-function show_row(
+function show_rows(
     io::IO,
     x::AbstractIndex,
     row_indices::AbstractVector,
@@ -153,7 +146,7 @@ function show_row(
     end
 end
 
-function show_row(
+function show_rows(
     io::IO,
     x::AbstractIndex,
     row_indices::Tuple{AbstractVector,AbstractVector},
@@ -187,77 +180,4 @@ function show_row(
     end
 end
 
-
 const AbstractAxesIndex{N} = Tuple{Vararg{<:AbstractIndex,N}}
-
-
-"""
-    LabelIndex
-"""
-struct LabelIndex{label,TA,Ti,A,I} <: AbstractIndex{TA,TI,A,I}
-    index::I
-
-    function LabelIndex{label,TA,TI,A,I}(index::AbstractVector{T}) where {label,TA,TI,A,I}
-        index_checks(label, index)
-        new{label,TA,TI,A,I}(index)
-    end
-end
-
-function LabelIndex(label::NTuple{N,T}, index::AbstractVector{TA}) where {N,T,TA}
-    LabelIndex{label,TA,T,NTuple{N,T},typeof(index)}(index)
-end
-
-"""
-    AxisIndex
-"""
-struct AxisIndex{TA,TI,A,I<:AbstractVector{T}} <: AbstractIndex{TA,TI,A,I}
-    axis::A
-    index::I
-
-    function AxisIndex{TA,TI,A,I}(axiss::A, index::I) where {TA,TI,A,I}
-        index_checks(axis, index)
-        new{TA,TI,A,I}(axis, index)
-    end
-end
-
-to_axis(x::AxisIndex{TA,TI,A,I}) where {TA,TI,A,I} = OneTo(length(x))
-to_axis(x::AxisIndex{TA,TI,A,I}, i::Int) where {TA,TI,A,I} = i
-
-to_index(x::AxisIndex) = x.index
-to_index(x::AxisIndex{T}, i::T) = searchsortedfirst(to_index(x), i)
-
-
-"""
-    OneToIndex
-"""
-struct OneToIndex{T,I<:AbstractVector{T}} <: AbstractIndex{Int,T,OneTo,I}
-    index::I
-
-    function AxisIndex{TA,TI,A,I}(axiss::A, index::I) where {TA,TI,A,I}
-        index_checks(axis, index)
-        new{TA,TI,A,I}(axis, index)
-    end
-end
-
-to_axis(x::OneToIndex) = OneTo(length(x))
-to_axis(x::OneToIndex, i::Int) = i
-
-to_index(x::OneToIndex) = x.index
-
-
-"""
-    asindex(axis[, index])
-
-Chooses the most appropriate index type for an axis and index set.
-"""
-asindex(axis::AbstractVector, index::AbstractVector) = AxisIndex(axis, index)
-asindex(axis::AbstractVector, ::OneTo) = OneToIndex(axis)
-
-function asindex(axis::NTuple{N,T}, index::AbstractVector) where {N,T}
-    if isbitstype(T)
-        LabelIndex(axis, index)
-    else
-    end
-end
-
-asindex(axis::AbstractVector) = makeindex(axis, axes(axis, 1))
