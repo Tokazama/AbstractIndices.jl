@@ -2,7 +2,7 @@
     MarkedIndex
 
 """
-abstract type AbstractMarkedIndex{TK,TV,TA,TI,A,I} <: AbstractAxisIndex{TA,TI,A,I} end
+abstract type AbstractMarkedIndex{TK,TV,TA,TI,A,I} <: AbstractIndex{TA,TI,A,I} end
 
 """
     markers(mi::AbstractMarkedIndex)
@@ -46,7 +46,7 @@ Base.ismarked(mi::AbstractMarkedIndex) = !isempty(markers(mi))
 julia> mi = mark(1:3, :one => 1)
 ```
 """
-struct MarkedIndex{TK,TV,D<:AbstractDict{TK,TV},TA,TI,A,I,Ax<:AbstractAxisIndex{TA,TI,A,I}} <: AbstractMarkedIndex{TK,TV,TA,TI,A,I}
+struct MarkedIndex{TK,TV,D<:AbstractDict{TK,TV},TA,TI,A,I,Ax<:AbstractIndex{TA,TI,A,I}} <: AbstractMarkedIndex{TK,TV,TA,TI,A,I}
     axisindex::Ax
     markers::D
 
@@ -59,11 +59,11 @@ struct MarkedIndex{TK,TV,D<:AbstractDict{TK,TV},TA,TI,A,I,Ax<:AbstractAxisIndex{
     end
 end
 
-to_axis(mi::MarkedIndex) = axis(getproperty(mi, :axisindex))
-to_index(mi::MarkedIndex) = index(getproperty(mi, :axisindex))
+to_axis(mi::MarkedIndex) = to_axis(getproperty(mi, :axisindex))
+to_index(mi::MarkedIndex) = to_index(getproperty(mi, :axisindex))
 markers(mi::MarkedIndex) = getproperty(mi, :markers)
 
-function MarkedIndex(a::AbstractAxisIndex{TA,TI,A,I}, d::AbstractDict{TK,TV}) where {TK,TV,TA,TI,A,I}
+function MarkedIndex(a::AbstractIndex{TA,TI,A,I}, d::AbstractDict{TK,TV}) where {TK,TV,TA,TI,A,I}
     MarkedIndex{TK,TV,typeof(d),TA,TI,A,I,typeof(a)}(a, d)
 end
 

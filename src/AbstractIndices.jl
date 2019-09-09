@@ -3,7 +3,7 @@ module AbstractIndices
 using Dates
 
 import Base: length, axes, getindex, checkindex, checkbounds
-import Base: to_index, OneTo, tail
+import Base: to_index, OneTo, tail, show
 
 export AbstractIndex,
        AxisIndex,

@@ -30,9 +30,9 @@ IndicesArray(x::AbstractArray, axs::Tuple) = IndicesArray(x, map(asindex, axs, a
 
 IndicesArray(x::AbstractArray) = IndicesArray(x,  axes(x))
 
-const IndicesMatrix{T,P<:AbstractMatrix{T},AI1,AI2} = IndicesArray{T,2,P,Tuple{AI1,AI2}}
+const IndicesMatrix{T,Ax1,Ax2,D<:AbstractMatrix{T}} = IndicesArray{T,2,Tuple{Ax1,Ax2},D}
 
-const IndicesVector{T,P<:AbstractVector{T},A} = IndicesArray{T,1,P,Tuple{A}}
+const IndicesVector{T,Ax,D<:AbstractVector{T}} = IndicesArray{T,1,Tuple{Ax},D}
 
 const IndicesVecOrMat = Union{IndicesMatrix,IndicesVector}
 #IndicesArray(x::AbstractArray{T,N}, axes::Tuple{Vararg{<:AbstractAxis,N}}) where {T,N} =

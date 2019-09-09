@@ -45,8 +45,33 @@ function Base.getindex(a::AbstractIndicesVector, i::Any)
 end
 
 function maybe_indicesarray(a::AbstractIndicesArray{T}, p::AbstractArray{T}, inds::Tuple) where T
-    IndicesArray(p, to_axes(a, inds))
+    IndicesArray(p, _new_sub_axes(a, inds))
 end
+
+function _new_sub_axes(a::Tuple, inds::Tuple{<:Union{AbstractVector,Tuple},Vararg})
+    (getindex(first(a), first(inds)), _new_sub_axes(tail(a), tail(inds))...)
+end
+
+function _new_sub_axes(a::Tuple, inds::Tuple{Colon,Vararg})
+    (first(a), _new_sub_axes(tail(a), tail(inds))...)
+end
+
+function _new_sub_axes(a::Tuple, inds::Tuple{Union{Symbol,Number,AbstractString},Vararg})
+    (_new_sub_axes(tail(a), tail(inds))...,)
+end
+
+_new_sub_axes(a::Tuple{}, inds::Tuple{}) = ()
+
+function _new_sub_axes(a::Tuple, inds::Tuple{Any,Vararg})
+    subax = getindex(first(a), first(inds))
+    if length(subax) < 2
+        (_new_sub_axes(tail(a), tail(inds))...,)
+    else
+        (subax, _new_sub_axes(tail(a), tail(inds))...)
+    end
+end
+
+
 
 maybe_indicesarray(a::AbstractIndicesArray{T}, p::T, inds) where T = p
 

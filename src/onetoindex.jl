@@ -20,3 +20,8 @@ length(x::OneToIndex) = length(to_axis(x))
 to_index(x::OneToIndex) = OneTo(length(x))
 to_index(x::OneToIndex, i::Int) = i
 to_axis(x::OneToIndex) = x.axis
+
+function show(io::IO, ::MIME"text/plain", x::OneToIndex{T,<:AbstractRange}) where {T}
+    print(io, "OneToIndex($(to_axis(x)))")
+end
+
