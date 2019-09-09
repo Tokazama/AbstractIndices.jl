@@ -26,7 +26,7 @@ Base.lastindex(ai::AbstractIndex) = last(to_axis(ai))
 
 Returns the axis associated with an `AbstractIndex`.
 """
-to_axis(ai::AbstractIndex) = error("All subtypes of AbstractIndex must define `axis")
+to_axis(x::AbstractIndex) = error("All subtypes of AbstractIndex must define `to_axis")
 to_axis(x::AbstractIndex, i) = getindex(to_axis(x), i)
 to_axis(x::AbstractIndex, i::AbstractVector) = getindex(to_axis(x), i)
 to_axis(x::AbstractIndex, i::Colon) = to_axis(x)
@@ -88,7 +88,7 @@ indextype(::Type{<:AbstractIndex{TA,TI,A,I}}) where {TA,TI,A,I} = I
 
 Returns the element type of the index associated with an `AbstractIndex`.
 """
-indexeltype(::T) where {T<:AbstractIndex} = indextype(T)
+indexeltype(::T) where {T<:AbstractIndex} = indexeltype(T)
 indexeltype(::Type{<:AbstractIndex{TA,TI,A,I}}) where {TA,TI,A,I} = TI
 
 
@@ -109,75 +109,5 @@ function _iterate(x::AbstractIndex, state::Tuple{TA,S}) where {TA,S}
     @inbounds getindex(to_index(x, first(state)), last(state))
 end
 
-
-function Base.show(
-    io::IO,
-    x::AbstractIndex,
-    row_name_separator::Union{AbstractString,AbstractChar}="-"
-   )
-    sz = displaysize(io)
-    size_x = length(x)
-    if size_x > first(sz)
-        half_sz = div(first(sz), 2)
-        inds = (1:half_sz, (size_x - half_sz):size_x)
-    else
-        inds = 1:size_x
-    end
-    show_rows(io, x, inds, row_name_separator)
-end
-
-function show_rows(
-    io::IO,
-    x::AbstractIndex,
-    row_indices::AbstractVector,
-    row_name::Union{AbstractString,AbstractChar},
-    row_value::Union{AbstractString,AbstractChar},
-    row_name_separator::Union{AbstractString,AbstractChar},
-    row_value_separator::Union{AbstractString,AbstractChar}
-   )
-    size_max = 0
-    for i in row_indices
-        size_max = max(size_max, length(string(to_axis(x, i))))
-    end
-    for i in row_indices
-        print(io, lpad(string(to_axis(x, i)), size_max))
-        print(io, row_name_separator)
-        print(io, string(to_index(x, i)))
-    end
-end
-
-function show_rows(
-    io::IO,
-    x::AbstractIndex,
-    row_indices::Tuple{AbstractVector,AbstractVector},
-    row_name::Union{AbstractString,AbstractChar},
-    row_value::Union{AbstractString,AbstractChar},
-    row_name_separator::Union{AbstractString,AbstractChar},
-    row_value_separator::Union{AbstractString,AbstractChar}
-   )
-    size_max = 0
-    for i in first(row_indices)
-        size_max = max(size_max, length(string(to_axis(x, i))))
-    end
-    for i in last(row_indices)
-        size_max = max(size_max, length(string(to_axis(x, i))))
-    end
- 
-    for i in first(row_indices)
-        print(io, lpad(string(to_axis(x, i)), size_max))
-        print(io, row_name_separator)
-        print(io, string(to_index(x, i)))
-        print(io, "\n")
-    end
-
-    print(io, repeat(" ", size_max), "⋮")
-    print(io, "\n")
-    for i in last(row_indices)
-        print(io, lpad(string(to_axis(x, i)), size_max))
-        print(io, row_name_separator)
-        print(io, string(to_index(x, i)))
-        print(io, "\n")
-    end
-end
 
 const AbstractAxesIndex{N} = Tuple{Vararg{<:AbstractIndex,N}}

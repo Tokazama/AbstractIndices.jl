@@ -39,6 +39,7 @@ julia> symbol_index[:three]
 ```
 """
 asindex(axis::AbstractVector, index::AbstractVector) = AxisIndex(axis, index)
+
 asindex(axis::AbstractVector, ::OneTo) = OneToIndex(axis)
 
 asindex(axis::NTuple{N}) where {N} = asindex(axis, OneTo(N))

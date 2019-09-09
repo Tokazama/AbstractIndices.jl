@@ -3,7 +3,7 @@
 
 An `AbstractIndex` subtype that maps directl to a `OneTo` range.
 """
-struct OneToIndex{T,A} <: AbstractIndex{T,Int,A,OneTo}
+struct OneToIndex{T,A} <: AbstractIndex{T,Int,A,OneTo{Int}}
     axis::A
 
     function OneToIndex{T,A}(axis::A) where {T,A<:AbstractVector{T}}
@@ -14,6 +14,8 @@ struct OneToIndex{T,A} <: AbstractIndex{T,Int,A,OneTo}
 end
 
 OneToIndex(axis::AbstractVector{T}) where {T} = OneToIndex{T,typeof(axis)}(axis)
+
+length(x::OneToIndex) = length(to_axis(x))
 
 to_index(x::OneToIndex) = OneTo(length(x))
 to_index(x::OneToIndex, i::Int) = i

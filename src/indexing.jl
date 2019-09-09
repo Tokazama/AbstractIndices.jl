@@ -24,39 +24,6 @@ function setaxis!(ai::AbstractIndex, val::Any, i::Any)
     @inbounds setindex!(to_axis(ai), val, to_index(to_axis(ai), i))
 end
 
-"""
-    canindex(a::AxisIndex, b::AbstractVector) -> Bool
-
-Determines if the `index` of `a` is appropriate for indexing `b`.
-
-# Examples
-```jldoctest
-julia> canindex(AxisIndex(2:11, Base.OneTo(10)), Base.OneTo(10))
-true
-
-julia> canindex(AxisIndex(2:11, Base.OneTo(10)), AxisIndex(2:11, Base.OneTo(10)))
-false
-
-```
-"""
-canindex(a::AxisIndex, b::AxisIndex) = _canindex(index(a), axis(b))
-
-canindex(a::AxisIndex, b::AbstractVector) = _canindex(index(a), axes(b, 1))
-
-function _canindex(a::AbstractRange{T}, b::AbstractRange{T}) where {T}
-    first(a) == first(b) && step(a) == step(b) && last(a) == last(b)
-end
-
-function _canindex(a::AbstractVector{T}, b::AbstractVector{T}) where {T}
-    out = true
-    for (a_i,b_i) in zip(a,b)
-        out &= (a_i === b_i)
-    end
-    return out & (length(b) == length(b))
-end
-
-_canindex(a::AbstractVector{Ta}, b::AbstractVector{Tb}) where {Ta,Tb} = false
-
 Base.getindex(a::AbstractIndicesArray{T,N}, i::Colon) where {T,N} = a
 
 function Base.getindex(a::AbstractIndicesArray{T,N}, i::CartesianIndex{N}) where {T,N}
@@ -82,3 +49,7 @@ function maybe_indicesarray(a::AbstractIndicesArray{T}, p::AbstractArray{T}, ind
 end
 
 maybe_indicesarray(a::AbstractIndicesArray{T}, p::T, inds) where T = p
+
+function Base.CartesianIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N}
+    CartesianIndices(to_index.(axs))
+end
