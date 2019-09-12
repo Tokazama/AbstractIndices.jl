@@ -24,6 +24,8 @@ function checkindex(::Type{Bool}, x::AbstractIndex{Int,TI,A,I}, i::AbstractVecto
 end
 
 _checkindex(axis::AbstractRange{T}, i::AbstractRange{T}) where {T} = issubset(i, axis)
+_checkindex(axis::AbstractRange{T}, i::AbstractIndex{Int}) where {T} = issubset(axis, to_index(i))
 
 
 checkbounds(::Type{Bool}, x::AbstractIndex, i::Any) = checkindex(Bool, x, i)
+

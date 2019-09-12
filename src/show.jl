@@ -1,5 +1,10 @@
 struct SkipPoint end
 
+"""
+    show(io, ::AbstractIndex, ...args; kwargs...)
+
+# Arguments
+"""
 function Base.show(
     io::IO,
     x::AbstractIndex,
@@ -70,10 +75,13 @@ function show_rows(
     end
 end
 
+"""
+    show
+"""
 function show(
     io::IO,
     ::MIME"text/plain",
-    a::AbstractIndicesArray,
+    a::AbstractIndicesMatrix,
     row_col_name::Union{AbstractString,AbstractChar}="  ",
     row_name_separator::Union{AbstractString,AbstractChar}="-",
     col_name_separator::Union{AbstractString,AbstractChar}="  ",
@@ -120,7 +128,9 @@ function show(
             for i = 1:(nd-1); print(io, "$(idxs[i]), "); end
             println(io, idxs[end], "] =")
         end
-        slice = view(a, axes(a,1), axes(a,2), idxs...)
+        # TODO views of AbstractIndicesArrays
+        # slice = view(a, axes(a,1), axes(a,2), idxs...)
+        slice = a[axes(a, 1), axes(a, 2), idxs...]
         show_indices_matrix(
             io,
             slice,
@@ -143,7 +153,7 @@ end
 """
 function show_indices_matrix(
     io::IO,
-    X::Union{AbstractIndicesMatrix,SubIndicesMatrix},
+    X::AbstractMatrix,
     row_col_name::Union{AbstractString,AbstractChar}="  ",
     row_name_separator::AbstractString="-",
     row_value_separator::AbstractString="  ",

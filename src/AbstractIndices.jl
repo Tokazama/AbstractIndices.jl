@@ -9,6 +9,8 @@ export AbstractIndex,
        AxisIndex,
        OneToIndex,
        LabelIndex,
+       AbstractIndicesArray,
+       LinearAxesIndices,
        IndicesArray,
        # methods
        axistype,
@@ -28,6 +30,7 @@ include("labelindex.jl")
 include("onetoindex.jl")
 include("indicesarray.jl")
 include("asindex.jl")
+include("linearaxesindices.jl")
 include("checkbounds.jl")
 include("indexing.jl")
 include("show.jl")
