@@ -18,9 +18,11 @@ function LabelIndex(label::NTuple{N,TA}, index::AbstractVector{TI}) where {N,TA,
     LabelIndex{label,TA,TI,NTuple{N,TA},typeof(index)}(index)
 end
 
+const LabelledTuple{label,TA,TI,A<:Tuple,I<:Tuple} = LabelIndex{label,TA,TI,A,I}
+
 length(::LabelIndex{label}) where {label} = length(label)
 
-to_axis(::LabelIndex{label}) where {label} = label
+Base.keys(::LabelIndex{label}) where {label} = label
 
 to_index(li::LabelIndex) = li.index
 

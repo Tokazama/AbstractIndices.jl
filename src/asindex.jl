@@ -27,6 +27,13 @@ julia> int_offset[3]
 2
 ```
 
+The easiest way around this behavior is just using a `CartesianIndex`
+```jldoctest axisindex_examples
+julia> int_offset[CartesianIndex(3)]
+3
+```
+
+
 It's also possible to use a tuple of `Symbol`s to represent a vector.
 ```jldoctest
 julia> symbol_index = asindex((:one, :two, :three))
@@ -37,6 +44,9 @@ julia> symbol_index[:one]
 julia> symbol_index[:three]
 3
 ```
+
+Note that an `AbstractIndex` acts much like a `NamedTuple`. Iteration produces
+the actual values but the use of `pairs` produces the name-value pairs.
 """
 asindex(axis::AbstractVector, index::AbstractVector) = AxisIndex(axis, index)
 

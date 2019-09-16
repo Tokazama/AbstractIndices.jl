@@ -11,9 +11,9 @@ struct AxisIndex{TA,TI,A,I} <: AbstractIndex{TA,TI,A,I}
     end
 end
 
-to_axis(x::AxisIndex{TA,TI,A,I}) where {TA,TI,A,I} = OneTo(length(x))
-to_axis(x::AxisIndex{TA,TI,A,I}, i::Int) where {TA,TI,A,I} = i
+Base.keys(x::AxisIndex{TA,TI,A,I}) where {TA,TI,A,I} = OneTo(length(x))
+Base.keys(x::AxisIndex{TA,TI,A,I}, i::Int) where {TA,TI,A,I} = i
 
-to_index(x::AxisIndex) = x.index
-to_index(x::AxisIndex{T}, i::T) where {T} = searchsortedfirst(to_index(x), i)
+Base.values(x::AxisIndex) = x.index
+Base.values(x::AxisIndex{T}, i::T) where {T} = searchsortedfirst(values(x), i)
 

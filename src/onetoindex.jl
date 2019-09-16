@@ -1,7 +1,8 @@
 """
     OneToIndex
 
-An `AbstractIndex` subtype that maps directl to a `OneTo` range.
+An `AbstractIndex` subtype that maps directly to a `OneTo` range. Conversion of
+any `AbstractVector
 """
 struct OneToIndex{T,A} <: AbstractIndex{T,Int,A,OneTo{Int}}
     axis::A
@@ -15,13 +16,13 @@ end
 
 OneToIndex(axis::AbstractVector{T}) where {T} = OneToIndex{T,typeof(axis)}(axis)
 
-length(x::OneToIndex) = length(to_axis(x))
+length(x::OneToIndex) = length(keys(x))
 
-to_index(x::OneToIndex) = OneTo(length(x))
-to_index(x::OneToIndex, i::Int) = i
-to_axis(x::OneToIndex) = x.axis
+Base.values(x::OneToIndex) = OneTo(length(x))
+Base.values(x::OneToIndex, i::Int) = i
+Base.keys(x::OneToIndex) = x.axis
 
 function show(io::IO, ::MIME"text/plain", x::OneToIndex{T,<:AbstractRange}) where {T}
-    print(io, "OneToIndex($(to_axis(x)))")
+    print(io, "OneToIndex($(keys(x)))")
 end
 
