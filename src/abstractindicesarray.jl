@@ -31,17 +31,23 @@ end
 Base.getindex(a::AbstractIndicesArray{T,N}, i::Colon) where {T,N} = a
 
 function Base.getindex(a::AbstractIndicesArray{T,N}, i::CartesianIndex{N}) where {T,N}
-    getindex(parent(a), to_indices(a, i.I))
+    getindex(parent(a), i)
 end
 
-function Base.getindex(a::AbstractIndicesArray{T,1}, i::Any) where T
+function Base.getindex(a::AbstractIndicesArray{T,N}, i::Int) where {T,N}
     @boundscheck checkbounds(a, i)
     @inbounds getindex(parent(a), i)
 end
 
+
+function Base.getindex(a::AbstractIndicesArray{T,1}, i::Any) where T
+    @boundscheck checkbounds(a, i)
+    @inbounds _getindex(typeof(a), parent(a), axes(a), i)
+end
+
 function Base.getindex(a::AbstractIndicesArray{T,N}, i::Vararg{Any,N}) where {T,N}
     @boundscheck checkbounds(a, i...)
-    @inbounds _getindex(typeof(a), parent(a), axes(a), i...)
+    @inbounds _getindex(typeof(a), parent(a), axes(a), i)
 end
 
 function _getindex(::Type{A}, a::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractIndex,N}}, i::Tuple{Vararg{Any,N}}) where {A<:AbstractIndicesArray,T,N}

@@ -1,5 +1,5 @@
 
-
+### indexing an AbstractIndex
 to_index(a::AbstractIndex{K,V}, i::K) where {K,V} = getindex(values(a), _to_index(keys(a), i))
 
 # ketype is not Int so assume user wants to directly go to index
@@ -29,6 +29,10 @@ end
 _to_index(k::TupOrVec, inds::TupOrVec) = map(i -> _to_index(k, i), inds)
 
 # TODO double check this
-_to_index(k::AbstractRange, inds::AbstractRange) = findfirst(k, first(inds)):round(Integer, step(inds) * step(k)):findfirst(k, last(inds))
+function _to_index(k::AbstractRange, inds::AbstractRange)
+    findfirst(isequal(first(inds)), k):round(Integer, step(inds) / step(k)):findfirst(isequal(last(inds)), k)
+end
 
+### indexing with an AbstractIndex
 
+to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, i)

@@ -15,7 +15,12 @@ export AbstractIndex,
        stepindex,
        asindex,
        # NamedDims
-       NamedDimsArray
+       NamedDimsArray,
+       # NamedDimsExtra
+       filteraxes,
+       findaxes,
+       namedaxes
+
 
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
@@ -32,9 +37,8 @@ include("show.jl")
 include("axisindex.jl")
 include("onetoindex.jl")
 include("statickeys.jl")
+include("asindex.jl")
 include("indicesarray.jl")
 include("subindices.jl")
-include("asindex.jl")
-
 
 end

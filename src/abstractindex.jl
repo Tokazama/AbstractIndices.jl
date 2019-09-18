@@ -59,9 +59,14 @@ end
 
 Base.getindex(a::AbstractIndex, i::Colon) = a
 
-function Base.CartesianIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N}
-    CartesianIndices(values.(axs))
+function getindex(A::AbstractArray{T,N}, i::Vararg{AbstractIndex,N}) where {T,N}
+    getindex(A, to_indices(A, i))
 end
+
+
+Base.LinearIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N} = LinearIndices(values.(axs))
+
+Base.CartesianIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N} = CartesianIndices(values.(axs))
 
 Base.Slice(x::AbstractIndex) = Base.Slice(values(x))
 

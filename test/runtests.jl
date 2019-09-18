@@ -34,47 +34,135 @@ using AbstractIndices, Test
    end
 end
 
-#A = reshape(1:24, 2,3,4)
-#Aindices = IndicesArray(A, .1:.1:.2, 1//10:1//10:3//10, ["a", "b", "c", "d"])
+@testset "AbstractIndicesArrays" begin
 
-#= TODO
-@testset "axes(A, [d])" begin
-    @test @inferred(axes(A)) == (.1:.1:.2, 1//10:1//10:3//10, ["a", "b", "c", "d"])
-    @test axes(A, 1) == .1:.1:.2
-    @test axes(A, 2) == 1//10:1//10:3//10
-    @test axes(A, 3) == ["a", "b", "c", "d"]
-    @test @inferred(axes(Ainds)) == axes(Aplain)
-    @test axes(Ainds, 1) == axes(Aplain, 1)
-    @test axes(Ainds, 2) == axes(Aplain, 2)
-    @test axes(Ainds, 3) == axes(Aplain, 3)
+    A = rand(5,4,3)
+    Aoneto = IndicesArray(A)
+
+    r1 = range(.1, stop = .2, length=5)
+    r2 = ["a", "b", "c", "d"]
+    r3 = 1//10:1//10:3//10
+
+    ind1 = asindex(r1)
+    ind2 = asindex(r2)
+    ind3 = asindex(r3)
+
+    Aindices = IndicesArray(A, r1, r2, r3)
+
+    Anamed = NamedDimsArray(Aindices, (:a, :b, :c))
+
+    @testset "axes(A, [d])" begin
+        @test axes(Aindices, 1) == ind1
+        @test axes(Aindices, 2) == ind2
+        @test axes(Aindices, 3) == ind3
+
+        @test axes(A, 1) == axes(Aoneto, 1)
+        @test axes(A, 2) == axes(Aoneto, 2)
+        @test axes(A, 3) == axes(Aoneto, 3)
+    end
+
+    @testset "Single Indexing" begin
+        t1 = getindex(A, 1, 1, 1)
+        t2 = getindex(A, 5, 4, 3)
+
+        @test getindex(Aoneto, 1, 1, 1) == t1
+        @test getindex(Aindices, r1[1], r2[1], r3[1]) == t1
+
+        # Cartesian indexing bypasses any sort of AbstractIndex
+        @test getindex(Aoneto, CartesianIndex(1,1,1)) == t1
+        @test getindex(Aindices, CartesianIndex(1,1,1)) == t1
+
+        @test getindex(Aoneto, 5, 4, 3) == t2
+        @test getindex(Aindices, r1[5], r2[4], r3[3]) == t2
+
+        # Cartesian indexing bypasses any sort of AbstractIndex
+        @test getindex(Aoneto, CartesianIndex(5, 4, 3)) == t2
+        @test getindex(Aindices, CartesianIndex(5, 4, 3)) == t2
+
+        @test getindex(Aoneto, 1) == t1
+        @test getindex(Aindices, 1) == t1
+        @test getindex(Aoneto, 60) == t2
+        @test getindex(Aindices, 60) == t2
+        #=
+        @test checkbounds(Bool, A, 61) == false
+        # extra indices
+        @test checkbounds(Bool, Aoneto, 2, 2, 2, 1) == true
+        @test checkbounds(Bool, Aindices, 2, 2, 2, 1) == true
+        @test checkbounds(Bool, Aoneto, 2, 2, 2, 2) == false
+        @test checkbounds(Bool, Aindices, 2, 2, 2, 2) == false
+
+        @test checkbounds(Bool, A, 1, 1)  == false
+        @test checkbounds(Bool, A, 1, 12) == false
+        @test checkbounds(Bool, A, 5, 12) == false
+        @test checkbounds(Bool, A, 1, 13) == false
+        @test checkbounds(Bool, A, 6, 12) == false
+        @test checkbounds(Bool, A, 0, 1, 1) == false
+        @test checkbounds(Bool, A, 1, 0, 1) == false
+        @test checkbounds(Bool, A, 1, 1, 0) == false
+        @test checkbounds(Bool, A, 6, 4, 3) == false
+        @test checkbounds(Bool, A, 5, 5, 3) == false
+        @test checkbounds(Bool, A, 5, 4, 4) == false
+        =#
+    end
+
+    @testset "Vector indexing" begin
+        @test getindex(Aindices, r1, r2, r3) == getindex(A, 1:5, 1:4, 1:3)
+        @test getindex(Aoneto, 1:5, 1:4, 1:3) == getindex(A, 1:5, 1:4, 1:3)
+
+        @test getindex(Aindices, 1:60) == getindex(Aoneto, 1:60) == getindex(A, 1:60)
+        @test checkbounds(Bool, A, 2, 2, 2, 1:1) == true  # extra indices
+
+        #=
+        @test checkbounds(Bool, A, 2, 2, 2, 1:2) == false
+        @test checkbounds(Bool, A, 1:5, 1:4) == false
+        @test checkbounds(Bool, A, 1:5, 1:12) == false
+        @test checkbounds(Bool, A, 1:5, 1:13) == false
+        @test checkbounds(Bool, A, 1:6, 1:12) == false
+ 
+        @test checkbounds(Bool, A, 1:61) == false
+
+        @test checkbounds(Bool, A, 0:5, 1:4, 1:3) == false
+        @test checkbounds(Bool, A, 1:5, 0:4, 1:3) == false
+        @test checkbounds(Bool, A, 1:5, 1:4, 0:3) == false
+        @test checkbounds(Bool, A, 1:6, 1:4, 1:3) == false
+        @test checkbounds(Bool, A, 1:5, 1:5, 1:3) == false
+        @test checkbounds(Bool, A, 1:5, 1:4, 1:4) == false
+        =#
+    end
+
+    #=
+    @testset "NamedDimsExtra" begin
+
+        @testset "filteraxes" begin
+            @test @inferred(filteraxes(allunique, A)) == axes(A)
+            @test @inferred(filteraxes(allunique, namedaxes(Anamed))) == namedaxes(Anamed)
+            @test @inferred(length(filteraxes(allunique, A))) == ndims(A)
+            @test @inferred(length(filteraxes(i -> length(i) == length(axes(A,1)), A))) == 1
+
+            # No axes should be equal to Zach Efron, nor could they be.
+            @test @inferred(filteraxes(i->i == "Zach Efron", A)) == nothing
+            @test @inferred(filteraxes(i->i == "Zach Efron", Anamed)) == nothing
+
+            @test_throws AbstractIndices.NamedDimsExtra.no_axes_error("bad test") filteraxes(allunique, "bad test")
+        end
+
+        @testset "findaxes" begin
+            @test @inferred(findaxes(allunique, A)) == ntuple(i->i, ndims(A))
+            @test @inferred(findaxes(allunique, Anamed)) == ntuple(i->i, ndims(A))
+
+            @test @inferred(length(findaxes(allunique, A))) == ndims(A)
+            @test @inferred(length(findaxes(i -> length(i) == length(axes(A,1)), A))) == (1,)
+            @test @inferred(length(findaxes(i -> length(i) == length(axes(Anamed,1)), Anamed))) == (dimnames(Anamed, 1),)
+
+            # No axes should be equal to Zach Efron, nor could they be.
+            @test @inferred(findaxes(i->i == "Zach Efron", A)) == nothing
+            @test @inferred(findaxes(i->i == "Zach Efron", Anamed)) == nothing
+
+            @test_throws AbstractIndices.NamedDimsExtra.no_axes_error("bad test") findaxes(allunique, "bad test")
+        end
+
+    end
+    =#
 end
 
-@testset "filteraxes" begin
-    @test @inferred(typeof(filteraxes(allunique, A))) == typeof(axes(A))
-    @test @inferred(typeof(filteraxes(allunique, namedaxes(Anamed)))) == typeof(namedaxes(Anamed))
-    @test @inferred(length(filteraxes(allunique, A))) == ndims(A)
-    @test @inferred(length(filteraxes(i -> length(i) == length(axes(A,1)), A))) == 1
 
-    # No axes should be equal to Zach Efron, nor could they be.
-    @test @inferred(filteraxes(i->i == "Zach Efron", A)) == nothing
-    @test @inferred(filteraxes(i->i == "Zach Efron", Anamed)) == nothing
-
-    @test_throws no_axes_error("bad test") filteraxes(allunique, "bad test")
-end
-
-@testset "findaxes" begin
-    @test @inferred(typeof(findaxes(allunique, A))) == NTuple{ndims(A),Int}
-    @test @inferred(typeof(findaxes(allunique, Anamed))) == NTuple{ndims(Anamed),Symbol}
-
-    @test @inferred(length(findaxes(allunique, A))) == ndims(A)
-    @test @inferred(length(findaxes(i -> length(i) == length(axes(A,1)), A))) == (1,)
-    @test @inferred(length(findaxes(i -> length(i) == length(axes(Anamed,1)), Anamed))) == (dimnames(Anamed, 1),)
-
-    # No axes should be equal to Zach Efron, nor could they be.
-    @test @inferred(findaxes(i->i == "Zach Efron", A)) == nothing
-    @test @inferred(findaxes(i->i == "Zach Efron", Anamed)) == nothing
-
-    @test_throws no_axes_error("bad test") findaxes(allunique, "bad test")
-end
-
-=#

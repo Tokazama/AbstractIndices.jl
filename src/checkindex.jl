@@ -15,11 +15,11 @@ function checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, i::AbstractVector{Int
 end
 
 function checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, i::AbstractVector{TA}) where {TA,TI}
-    _checkindex(values(x), i)
+    issubset(i, keys(x))
 end
 
 function checkindex(::Type{Bool}, x::AbstractIndex{Int,TI}, i::AbstractVector{Int}) where {TI}
-    _checkindex(values(x), i)
+    issubset(i, keys(x))
 end
 
 function checkindex(::Type{Bool}, x::AbstractIndex, i::CartesianIndex{1})
@@ -27,8 +27,4 @@ function checkindex(::Type{Bool}, x::AbstractIndex, i::CartesianIndex{1})
 end
 
 checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, ::Colon) where {TA,TI} = true
-
-_checkindex(axis::AbstractRange{T}, i::AbstractRange{T}) where {T} = issubset(i, axis)
-_checkindex(axis::AbstractRange{T}, i::AbstractIndex{Int}) where {T} = issubset(axis, values(i))
-
 

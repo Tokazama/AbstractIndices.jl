@@ -4,17 +4,11 @@
 struct IndicesArray{T,N,A<:Tuple{Vararg{<:AbstractIndex,N}},D<:AbstractArray{T,N}} <: AbstractIndicesArray{T,N,A,D}
     parent::D
     axes::A
-
-    function IndicesArray{T,N,A,D}(p::D, a::A) where {T,N,A,D}
-        for (a_i, p_i) in (a, axes(p))
-            canindex(a_i, p_i) || error("$(a_i) cannot index $(p_i), the corresponding axis of the parent array $p.")
-        end
-        new{T,N,A,D}(p::D, a::A)
-    end
 end
 
-function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractIndex,N}}) where {T,N}
-    IndicesArray{T,N,typeof(axs),typeof(x)}(x, axs)
+function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractVector,N}}) where {T,N}
+    newaxs = map(asindex, axs, axes(x))
+    IndicesArray{T,N,typeof(newaxs),typeof(x)}(x, newaxs)
 end
 
 IndicesArray(x::AbstractArray, axs::Vararg) = IndicesArray(x, Tuple(axs))
@@ -40,3 +34,6 @@ Base.isempty(a::IndicesArray) = isempty(parent(a))
 function Base.similar(::Type{A}, a::AbstractArray, axs=axes(a)) where {A<:IndicesArray}
     IndicesArray(a, axs)
 end
+
+
+

@@ -27,12 +27,15 @@ const HDNFalse = HasDimNames{false}()
 HasDimNames(x::T) where T = HasDimNames(T)
 HasDimNames(::Type{T}) where T = HDNFalse
 
+HasDimNames(::Type{T}) where {T<:NamedDimsArray} = HDNTrue
+
 no_dimnames_error(a) = error("Type of $(typeof(a)) has no dimension names.")
 
 """
     HasAxes
 """
 struct HasAxes{T} end
+
 const HATrue = HasAxes{true}()
 const HAFalse = HasAxes{false}()
 
@@ -40,12 +43,13 @@ HasAxes(x::T) where T = HasAxes(T)
 HasAxes(::Type{T}) where T = HAFalse
 HasAxes(::Type{T}) where T<:AbstractArray = HATrue
 
+
 no_axes_error(a) = error("Type of $(typeof(a)) has no axes.")
 
 """
     dimnames
 """
-function dimnames end
+dimnames(::NamedDimsArray{names}) where {names} = names
 
 """
     DimName{Sym}
@@ -148,6 +152,7 @@ Returns the first element of `x` with it's accompanying key as a `NamedTuple`.
 """
 namedfirst(x::NamedTuple) = NamedTuple{(first(keys(x)),)}((first(x),))
 
+
 """
     filteraxes(f, a)
 
@@ -208,7 +213,7 @@ function __findaxes(f, t::NamedTuple{names}) where {names}
     end
 end
 
-__findaxes(f, ::Tuple{}) = ()
+__findaxes(f, ::Tuple{}, ::Int) = ()
 __findaxes(f, ::NamedTuple{(),Tuple{}}) = ()
 
 _catch_empty(x::Tuple) = x
