@@ -4,23 +4,23 @@
 An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
 detailed examples describing its behavior.
 """
-abstract type AbstractIndex{TA,TI,A,I} <: AbstractVector{TI} end
+abstract type AbstractIndex{K,V} <: AbstractVector{V} end
 
-Base.valtype(::Type{<:AbstractIndex{TA,TI}}) where {TA,TI} = TI
+Base.valtype(::Type{<:AbstractIndex{K,V}}) where {K,V} = V
 
-Base.keytype(::Type{<:AbstractIndex{TA,TI}}) where {TA,TI} = TA
+Base.keytype(::Type{<:AbstractIndex{K,V}}) where {K,V} = K
 
-Base.length(ai::AbstractIndex) = length(values(ai))
+Base.length(a::AbstractIndex) = length(values(a))
 
-Base.size(ai::AbstractIndex) = (length(ai),)
+Base.size(a::AbstractIndex) = (length(a),)
 
-Base.first(ai::AbstractIndex) = first(values(ai))
+Base.first(a::AbstractIndex) = first(values(a))
 
-Base.last(ai::AbstractIndex) = last(values(ai))
+Base.last(a::AbstractIndex) = last(values(a))
 
-Base.step(ai::AbstractIndex) = step(values(ai))
+Base.step(a::AbstractIndex) = step(values(a))
 
-Base.firstindex(ai::AbstractIndex) = first(keys(ai))
+Base.firstindex(a::AbstractIndex) = first(keys(a))
 
 
 """
@@ -28,15 +28,14 @@ Base.firstindex(ai::AbstractIndex) = first(keys(ai))
 
 Returns the step size of the index.
 """
-stepindex(ai::AbstractIndex) = step(keys(ai))
+stepindex(a::AbstractIndex) = step(keys(a))
 
-Base.lastindex(ai::AbstractIndex) = last(keys(ai))
+Base.lastindex(a::AbstractIndex) = last(keys(a))
 
 
+Base.iterate(a::AbstractIndex) = iterate(values(a))
 
-Base.iterate(x::AbstractIndex) = iterate(keys(x))
-
-Base.iterate(x::AbstractIndex, state) = iterate(keys(x), state)
+Base.iterate(a::AbstractIndex, state) = iterate(values(a), state)
 
 
 # TODO rethink setaxis!
@@ -51,17 +50,31 @@ function setaxis!(ai::AbstractIndex, val::Any, i::Any)
 end
 
 
-function Base.getindex(ai::AbstractIndex, i::Any)
-    @boundscheck if !checkindex(Bool, ai, i)
-        throw(BoundsError(ai, i))
+function Base.getindex(a::AbstractIndex, i::Any)
+    @boundscheck if !checkindex(Bool, a, i)
+        throw(BoundsError(a, i))
     end
-    @inbounds to_index(ai, i)
+    @inbounds to_index(a, i)
 end
 
-Base.getindex(x::AbstractIndex, i::Colon) = x
+Base.getindex(a::AbstractIndex, i::Colon) = a
 
 function Base.CartesianIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N}
     CartesianIndices(values.(axs))
 end
 
 Base.Slice(x::AbstractIndex) = Base.Slice(values(x))
+
+"""
+    SingleIndex
+
+Represents a single point along an index. Useful for dimensions of length 1.
+"""
+struct SingleIndex{K,V} <: AbstractIndex{K,V}
+    key::K
+    val::V
+end
+
+Base.length(::SingleIndex) = 1
+
+const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}

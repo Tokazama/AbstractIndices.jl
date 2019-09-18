@@ -4,25 +4,25 @@
 An `AbstractIndex` subtype that maps directly to a `OneTo` range. Conversion of
 any `AbstractVector
 """
-struct OneToIndex{T,A} <: AbstractIndex{T,Int,A,OneTo{Int}}
-    axis::A
+struct OneToIndex{K,KV} <: AbstractIndex{K,Int}
+    _keys::KV
 
-    function OneToIndex{T,A}(axis::A) where {T,A<:AbstractVector{T}}
-        allunique(axis) || error("Not all elements in axis were unique.")
-        typeof(axes(axis, 1)) <: OneTo || error("OneToIndex requires an axis with a OneTo index.")
-        new{T,A}(axis)
+    function OneToIndex{K,KV}(keys::KV) where {K,KV}
+        allunique(keys) || error("Not all elements in axis were unique.")
+        typeof(axes(keys, 1)) <: OneTo || error("OneToIndex requires an axis with a OneTo index.")
+        new{K,KV}(keys)
     end
 end
 
-OneToIndex(axis::AbstractVector{T}) where {T} = OneToIndex{T,typeof(axis)}(axis)
+OneToIndex(keys::TupOrVec{K}) where {K} = OneToIndex{K,typeof(keys)}(keys)
 
 length(x::OneToIndex) = length(keys(x))
 
-Base.values(x::OneToIndex) = OneTo(length(x))
-Base.values(x::OneToIndex, i::Int) = i
-Base.keys(x::OneToIndex) = x.axis
+values(x::OneToIndex) = OneTo(length(x))
+values(x::OneToIndex, i::Int) = i
+keys(x::OneToIndex) = x._keys
 
-function show(io::IO, ::MIME"text/plain", x::OneToIndex{T,<:AbstractRange}) where {T}
+function show(io::IO, ::MIME"text/plain", x::OneToIndex{K,<:AbstractRange}) where {K}
     print(io, "OneToIndex($(keys(x)))")
 end
 
