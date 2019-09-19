@@ -34,6 +34,3 @@ Base.isempty(a::IndicesArray) = isempty(parent(a))
 function Base.similar(::Type{A}, a::AbstractArray, axs=axes(a)) where {A<:IndicesArray}
     IndicesArray(a, axs)
 end
-
-
-

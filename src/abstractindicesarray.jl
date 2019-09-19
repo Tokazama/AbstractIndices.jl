@@ -28,57 +28,12 @@ function Base.setindex!(ai::AxisIndex, val::Any, i::Any)
     @inbounds setindex!(to_index(ai), val, to_index(ai, i))
 end
 =#
-Base.getindex(a::AbstractIndicesArray{T,N}, i::Colon) where {T,N} = a
-
-function Base.getindex(a::AbstractIndicesArray{T,N}, i::CartesianIndex{N}) where {T,N}
-    getindex(parent(a), i)
-end
-
-function Base.getindex(a::AbstractIndicesArray{T,N}, i::Int) where {T,N}
-    @boundscheck checkbounds(a, i)
-    @inbounds getindex(parent(a), i)
-end
-
-
-function Base.getindex(a::AbstractIndicesArray{T,1}, i::Any) where T
-    @boundscheck checkbounds(a, i)
-    @inbounds _getindex(typeof(a), parent(a), axes(a), i)
-end
-
-function Base.getindex(a::AbstractIndicesArray{T,N}, i::Vararg{Any,N}) where {T,N}
-    @boundscheck checkbounds(a, i...)
-    @inbounds _getindex(typeof(a), parent(a), axes(a), i)
-end
-
-function _getindex(::Type{A}, a::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractIndex,N}}, i::Tuple{Vararg{Any,N}}) where {A<:AbstractIndicesArray,T,N}
-    maybe_indicesarray(A, a[map(to_index, axs, i)...], _drop_empty(map(getindex, axs, i)))
-end
-
-maybe_indicesarray(::Type{A}, a::AbstractArray, axs::Tuple) where {A<:AbstractIndicesArray} = similar(A, a, axs)
-
-maybe_indicesarray(::Type{A}, a::Any, axs::Tuple{}) where {A<:AbstractIndicesArray} = a
-
-
-function _drop_empty(x::Tuple)
-    if length(first(x)) > 1
-        (first(x), _drop_empty(tail(x))...)
-    else
-        _drop_empty(tail(x))
-    end
-end
-
-_drop_empty(x::Tuple{}) = ()
-
 function Base.dropdims(a::AbstractIndicesArray; dims)
-    d = to_dim(a, dims)
-    return similar(a, dropdims(parent(a); dims=d), map(i -> getindex(axes(a), i), d))
+    return similar(a, dropdims(parent(a); dims=dims), dropaxes(a, dims))
 end
 
 function Base.permutedims(a::AbstractIndicesArray, perm)
-    return _permutedims(a, to_dim(a, perm))
-end
-
-function _permutedims(a::AbstractIndicesArray{T,N}, perm::NTuple{N,Int}) where {T,N}
+    return similar(a, dropdims(parent(a); dims=dims), permuteaxes(a, dims))
 end
 
 for f in (
@@ -107,8 +62,16 @@ for f in (
     end
 end
 
+Base.zero(a::AbstractIndicesArray) = similar(a, zero(parent(a)), axes(a))
+
+Base.one(a::AbstractIndicesArray) = similar(a, one(parent(a)), axes(a))
+
+Base.copy(a::AbstractIndicesArray) = similar(a, copy(parent(a)), axes(a))
+
+
 
 #= TODO
+:sort, :sort!
 mapslices
 selectdim
 
@@ -118,16 +81,5 @@ copyto
 reverse
 iterate
 
-reduce
-mapreduce
-sum
-prod
-maximum
-minimum
-mean
-std
-var
-
-median
 reshape
 =#

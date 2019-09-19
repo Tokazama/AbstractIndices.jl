@@ -1,3 +1,5 @@
+Base.show(io::IO, a::AbstractIndex) = print(io, "$(typeof(a).name)($(values(a))")
+#=
 function Base.show(
     io::IO,
     x::AbstractIndex,
@@ -67,3 +69,4 @@ function show_rows(
         print(io, "\n")
     end
 end
+=#

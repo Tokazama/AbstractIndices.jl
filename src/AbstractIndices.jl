@@ -4,11 +4,14 @@ using LinearAlgebra, Statistics, NamedDims
 
 import Base: length, axes, getindex, checkindex, checkbounds
 import Base: to_index, OneTo, tail, show, to_dim, values, keys
+import Base.Iterators: Pairs
+import NamedDims: unname
 
 export AbstractIndex,
        AxisIndex,
        OneToIndex,
        StaticKeys,
+       NamedIndex,
        AbstractIndicesArray,
        IndicesArray,
        # methods
@@ -16,29 +19,36 @@ export AbstractIndex,
        asindex,
        # NamedDims
        NamedDimsArray,
-       # NamedDimsExtra
+       NamedIndicesArray,
+       dimnames,
+       # General - these combine the two
        filteraxes,
        findaxes,
-       namedaxes
+       mapaxes
 
 
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
-include("./NamedDimsExtra/NamedDimsExtra.jl")
-using .NamedDimsExtra
+
+# TODO remove this once implemented in NamedDims
+dimnames(::NamedDimsArray{names}) where {names} = names
+dimnames(::NamedDimsArray{names}, i) where {names} = names[i]
 
 include("utils.jl")
 include("abstractindex.jl")
 include("abstractindicesarray.jl")
-include("to_index.jl")
-include("checkindex.jl")
-include("show.jl")
-include("axisindex.jl")
-include("onetoindex.jl")
-include("statickeys.jl")
-include("asindex.jl")
+include("indexing.jl")
+include("axes.jl")
 include("indicesarray.jl")
+include("math.jl")
+include("reduce.jl")
 include("subindices.jl")
+include("show.jl")
+
+include("interface.jl")
 
 end
+
+
+

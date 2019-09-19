@@ -1,38 +1,33 @@
-
-function Base.mapreduce(a::AbstractIndicesArray)
+function reducedim(a::AbstractIndex, dims, i::Int)
+    if any(i .== dims)
+        return SingleIndex(a)
+    else
+        return a
+    end
 end
 
-mapreduce(f, op, A::AbstractArray; dims=:, kw...) = _mapreduce_dim(f, op, kw.data, A, dims)
-mapreduce(f, op, A::AbstractArray...; kw...) = reduce(op, map(f, A...); kw...)
-
-_mapreduce_dim(f, op, nt::NamedTuple{(:init,)}, A::AbstractArray, ::Colon) = mapfoldl(f, op, A; nt...)
-
-_mapreduce_dim(f, op, ::NamedTuple{()}, A::AbstractArray, ::Colon) = _mapreduce(f, op, IndexStyle(A), A)
-
-_mapreduce_dim(f, op, nt::NamedTuple{(:init,)}, A::AbstractArray, dims) =
-    mapreducedim!(f, op, reducedim_initarray(A, dims, nt.init), A)
-
-_mapreduce_dim(f, op, ::NamedTuple{()}, A::AbstractArray, dims) =
-    mapreducedim!(f, op, reducedim_init(f, op, A, dims), A)
+function reduceaxes(a::AbstractIndicesArray{T,N}, dims) where {T,N}
+    Tuple(map(i->reduced_dims(axes(a, i), dims, i), 1:N))
+end
 
 
-reduce(op, A::AbstractArray; kw...) = mapreduce(identity, op, A; kw...)
+for (mod, funs) in ((:Base, (:sum, :prod, :maximum, :minimum, :extrema)),
+                    (:Statistics, (:mean, :std, :var, :median)))
+    for f in funs
+        @eval function $mod.$f(a::AbstractIndicesArray; dims, kwargs...)
+            similar(a, $mod.$f(parent(a); dims=dims, kwargs...), reduceaxes(a, dims))
+        end
+    end
+end
 
-sum(A::AbstractArray; dims)
+function Base.mapslices(a::AbstractIndicesArray; dims, kswargs...)
+    similar(a, mapslices(f, parent(a); dims=dims, kwargs...), reduceaxes(a, dims))
+end
 
-sum!(r, A)
+function Base.mapreduce(a::AbstractIndicesArray; dims, kswargs...)
+    similar(a, mapreduce(f, parent(a); dims=dims, kwargs...), reduceaxes(a, dims))
+end
 
-prod(A::AbstractArray; dims)
-
-prod!(A::AbstractArray; dims)
-
-
-maximum(A::AbstractArray; dims)
-
-
-maximum!(r, A)
-
-
-minimum(A::AbstractArray; dims)
-
-minimum!(A::AbstractArray; dims)
+function Base.reduce(a::AbstractIndicesArray; dims, kswargs...)
+    similar(a, reduce(f, parent(a); dims=dims, kwargs...), reduceaxes(a, dims))
+end

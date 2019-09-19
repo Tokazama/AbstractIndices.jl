@@ -130,39 +130,24 @@ end
         =#
     end
 
-    #=
     @testset "NamedDimsExtra" begin
 
         @testset "filteraxes" begin
-            @test @inferred(filteraxes(allunique, A)) == axes(A)
-            @test @inferred(filteraxes(allunique, Anamed)) == axes(Anamed)
-            @test @inferred(length(filteraxes(allunique, A))) == ndims(A)
-            @test @inferred(length(filteraxes(i -> length(i) == length(axes(A,1)), A))) == 1
-
-            # No axes should be equal to Zach Efron, nor could they be.
-#            @test @inferred(filteraxes(i->i == "Zach Efron", A)) == nothing
-#            @test @inferred(filteraxes(i->i == "Zach Efron", Anamed)) == nothing
-
-#            @test_throws AbstractIndices.NamedDimsExtra.no_axes_error("bad test") filteraxes(allunique, "bad test")
-        end
+            @test filteraxes(allunique, A) == axes(A)
+            @test filteraxes(allunique, Anamed) == axes(Anamed)
+            @test length(filteraxes(allunique, A)) == ndims(A)
+            @test length(filteraxes(i -> length(i) == length(axes(A,1)), A)) == 1
+       end
 
         @testset "findaxes" begin
-            @test @inferred(findaxes(allunique, A)) == ntuple(i->i, ndims(A))
-            @test @inferred(findaxes(allunique, Anamed)) == ntuple(i->i, ndims(A))
+            @test findaxes(allunique, A) == ntuple(i->i, ndims(A))
+            @test findaxes(allunique, Anamed) == ntuple(i->i, ndims(A))
 
-            @test @inferred(length(findaxes(allunique, A))) == ndims(A)
-            @test @inferred(findaxes(i -> i == axes(A,1), A)) == (1,)
-            @test @inferred(findaxes(i -> i == axes(Anamed,1), Anamed)) == (1,)
-
-            # No axes should be equal to Zach Efron, nor could they be.
-#            @test @inferred(findaxes(i->i == "Zach Efron", A)) == nothing
-#            @test @inferred(findaxes(i->i == "Zach Efron", Anamed)) == nothing
-
-#            @test_throws AbstractIndices.NamedDimsExtra.no_axes_error("bad test") findaxes(allunique, "bad test")
+            @test length(findaxes(allunique, A)) == ndims(A)
+            @test findaxes(i -> i == axes(A,1), A) == (1,)
+            @test findaxes(i -> i == axes(Anamed,1), Anamed) == (1,)
         end
-
     end
-    =#
 end
 
 
