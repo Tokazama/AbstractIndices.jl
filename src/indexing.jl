@@ -1,27 +1,30 @@
 ###
 ### checkindex
 ###
-function checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, i::TA) where {TA,TI}
+
+checkbounds(::Type{Bool}, x::AbstractIndex, i) = checkindex(Bool, x, i)
+
+function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::K) where {K,V}
     firstindex(x) <= i <= lastindex(x)
 end
 
-function checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, i::Int) where {TA,TI}
+function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::Int) where {K,V}
     firstindex(values(x)) <= i <= lastindex(values(x))
 end
 
-function checkindex(::Type{Bool}, x::AbstractIndex{Int,TI}, i::Int) where {TI}
-    i in values(x)
+function checkindex(::Type{Bool}, x::AbstractIndex{Int,V}, i::Int) where {V}
+    i in keys(x)
 end
 
-function checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, i::AbstractVector{Int}) where {TA,TI}
+function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::AbstractVector{Int}) where {K,V}
     checkindex(Bool, values(x), i)
 end
 
-function checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, i::AbstractVector{TA}) where {TA,TI}
+function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::AbstractVector{K}) where {K,V}
     issubset(i, keys(x))
 end
 
-function checkindex(::Type{Bool}, x::AbstractIndex{Int,TI}, i::AbstractVector{Int}) where {TI}
+function checkindex(::Type{Bool}, x::AbstractIndex{Int,V}, i::AbstractVector{Int}) where {V}
     issubset(i, keys(x))
 end
 
@@ -29,7 +32,7 @@ function checkindex(::Type{Bool}, x::AbstractIndex, i::CartesianIndex{1})
     checkindex(Bool, x, first(i.I))
 end
 
-checkindex(::Type{Bool}, x::AbstractIndex{TA,TI}, ::Colon) where {TA,TI} = true
+checkindex(::Type{Bool}, x::AbstractIndex{K,V}, ::Colon) where {K,V} = true
 
 ###
 ### to_index
@@ -121,20 +124,21 @@ function Base.getindex(a::AbstractIndicesArray{T,N}, i::CartesianIndex{N}) where
     getindex(parent(a), i)
 end
 
-function Base.getindex(a::AbstractIndicesArray{T,N}, i::Int) where {T,N}
-    @boundscheck checkbounds(a, i)
-    @inbounds getindex(parent(a), i)
-end
-
-
 function Base.getindex(a::AbstractIndicesArray{T,1}, i::Any) where T
     @boundscheck checkbounds(a, i)
     @inbounds _getindex(typeof(a), parent(a), axes(a), i)
 end
 
-function Base.getindex(a::AbstractIndicesArray{T,N}, i::Vararg{Any,N}) where {T,N}
-    @boundscheck checkbounds(a, i...)
-    @inbounds _getindex(typeof(a), parent(a), axes(a), i)
+# if a single value is used for indexing than we assume it's linear indexing
+# and goes straight to the parent structure.
+function Base.getindex(a::AbstractIndicesArray{T,N}, i::Any) where {T,N}
+    @boundscheck checkbounds(parent(a), i)
+    @inbounds getindex(parent(a), i)
+end
+
+function Base.getindex(a::AbstractIndicesArray{T,N}, i, ii...) where {T,N}
+    @boundscheck checkbounds(a, i, ii...)
+    @inbounds _getindex(typeof(a), parent(a), axes(a), (i, ii...))
 end
 
 function _getindex(::Type{A}, a::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractIndex,N}}, i::Tuple{Vararg{Any,N}}) where {A<:AbstractIndicesArray,T,N}

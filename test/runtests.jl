@@ -41,7 +41,7 @@ end
 
     r1 = range(.1, stop = .2, length=5)
     r2 = ["a", "b", "c", "d"]
-    r3 = 1//10:1//10:3//10
+    r3 = 2:4
 
     ind1 = asindex(r1)
     ind2 = asindex(r2)
@@ -83,9 +83,11 @@ end
         @test getindex(Aindices, 1) == t1
         @test getindex(Aoneto, 60) == t2
         @test getindex(Aindices, 60) == t2
+
+        @test checkbounds(Bool, Aindices, 61) == false
+        @test checkbounds(Bool, Anamed, 61) == false
+
         #=
-        @test checkbounds(Bool, A, 61) == false
-        # extra indices
         @test checkbounds(Bool, Aoneto, 2, 2, 2, 1) == true
         @test checkbounds(Bool, Aindices, 2, 2, 2, 1) == true
         @test checkbounds(Bool, Aoneto, 2, 2, 2, 2) == false
