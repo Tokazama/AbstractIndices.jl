@@ -34,6 +34,7 @@ const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 # TODO remove this once implemented in NamedDims
 dimnames(::NamedDimsArray{names}) where {names} = names
 dimnames(::NamedDimsArray{names}, i) where {names} = names[i]
+dimnames(::AbstractArray) = nothing
 
 include("utils.jl")
 include("abstractindex.jl")
@@ -44,9 +45,9 @@ include("indicesarray.jl")
 include("math.jl")
 include("reduce.jl")
 include("subindices.jl")
-include("show.jl")
-
 include("interface.jl")
+
+include("show.jl")
 
 end
 

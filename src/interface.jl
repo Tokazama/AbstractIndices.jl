@@ -23,7 +23,10 @@ const HAFalse = HasAxes{false}()
 HasAxes(x::T) where T = HasAxes(T)
 HasAxes(::Type{T}) where T = HAFalse
 HasAxes(::Type{T}) where T<:AbstractArray = HATrue
+
 const NamedIndicesArray{L,T,N,Ax,D} = NamedDimsArray{L,T,N,IndicesArray{T,N,Ax,D}}
+
+const NamedIndicesMatrix{L,T,Ax,D<:AbstractMatrix{T}} = NamedIndicesArray{L,T,2,Ax,D}
 
 function NamedIndicesArray(a::AbstractArray, axs::NamedAxes)
     IndicesArray(NamedDimsArray(dimnames(axs), a), unname(axs))

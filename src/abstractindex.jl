@@ -52,6 +52,8 @@ struct OneToIndex{K,KV} <: AbstractIndex{K,Int}
     end
 end
 
+    
+
 OneToIndex(keys::TupOrVec{K}) where {K} = OneToIndex{K,typeof(keys)}(keys)
 
 length(x::OneToIndex) = length(keys(x))
@@ -60,7 +62,7 @@ values(x::OneToIndex) = OneTo(length(x))
 values(x::OneToIndex, i::Int) = i
 keys(x::OneToIndex) = x._keys
 
-show(io::IO, x::OneToIndex{K,<:AbstractRange}) where {K} = print(io, "OneToIndex($(keys(x)))")
+
 
 """
     AxisIndex
