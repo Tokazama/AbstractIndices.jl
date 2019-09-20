@@ -161,5 +161,5 @@ end
 
 
 @testset "math" begin
-    Anamed = NamedIndicesArray(rand(4,4), a = 2:3, b = 3:4)
+    Anamed = NamedIndicesArray(rand(4,4), a = 2:5, b = 3:6)
 end

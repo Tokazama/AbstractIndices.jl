@@ -1,3 +1,7 @@
+
+Base.has_offset_axes(::OneToIndex) = false
+Base.has_offset_axes(::StaticKeys) = false
+Base.has_offset_axes(a::AbstractIndex) = !isone(firstindex(a))
 ###
 ### to_index
 ###
@@ -35,6 +39,7 @@ function _to_index(k::AbstractRange, inds::AbstractRange)
 end
 
 to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
+
 
 ###
 ### AbstractIndex getindex

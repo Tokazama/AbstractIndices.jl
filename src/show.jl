@@ -1,31 +1,4 @@
-
-###
-### AbstractIndex
-###
-function show_rows(
-    io::IO,
-    row_name::Union{AbstractString,AbstractChar},
-    row_values::Vector{Union{AbstractString,AbstractChar}},
-    row_name_separator::Union{AbstractString,AbstractChar}="│",
-    value_separator::Union{AbstractString,AbstractChar}="  ",
-    left_border::Union{AbstractString,AbstractChar}="",
-    right_border::Union{AbstractString,AbstractChar}=""
-   )
-    print(io, left_border)
-    print(io, row_name)
-    print(io, row_name_separator)
-    print(io, first(row_values))
-    for i in 2:length(row_values)
-        print(io, row_values)
-        print(io, value_separator[i])
-    end
-    print(io, right_border)
-    print(io, "\n")
-end
-
-function show(io::IO, ::MIME"text/plain", a::AbstractIndex)
-    show_index(io, keys(a), values(a))
-end
+show(io::IO, a::AbstractIndex) = show_index(io, keys(a), values(a))
 
 function show_index(io::IO, ks::AbstractRange, vs::AbstractRange)
     print(io, "Index: $(ks) => $(vs)")
@@ -39,6 +12,8 @@ function show_index(io::IO, ks::TupOrVec, vs::TupOrVec)
     end
 end
 
+Base.print_matrix(io::IO, a::AbstractIndex) = show_index(io, keys(a), values(a))
+
 ###
 ### Array show
 ###
@@ -48,11 +23,13 @@ function Base.summary(a::AbstractIndicesArray{T,N}) where {T,N}
 end
 
 
-Base.show(io::IO, ::MIME"text/plain", n::AbstractIndicesArray) = show(io, n)
+function Base.show(io::IO, ::MIME"text/plain", n::Union{AbstractIndicesArray,NamedIndicesArray})
+   show(io, n)
+end
 
 sprint_colpart(width::Int, s::AbstractVector) = join(map(s->lpad(s, width, " "), s), "  ")
 
-function show(io::IO, v::AbstractIndicesVector)
+function show(io::IO, v::Union{AbstractIndicesVector,NamedIndicesVector})
     println(io, summary(v))
     limit = get(io, :limit, true)
     if size(v) != (0,)
@@ -68,7 +45,7 @@ end
 function show(
     io::IO,
     ::MIME"text/plain",
-    m::AbstractIndicesMatrix
+    m::Union{AbstractIndicesMatrix,NamedIndicesMatrix}
    )
     print(io, summary(m))
     limit = get(io, :limit, true)
@@ -81,10 +58,7 @@ function show(
 end
 
 ## ndims==1 is dispatched below
-function show(
-    io::IO,
-    a::AbstractIndicesArray{T,N}
-   ) where {T,N}
+function show(io::IO, a::Union{AbstractIndicesArray,NamedIndicesArray})
     print(io, summary(a))
     s = size(a)
     limit = get(io, :limit, true)
@@ -112,8 +86,6 @@ function show(
         i += 1
     end
 end
-
-#show(io::IO, x::NamedVector) = invoke(show, (IO, NamedArray), io, x)
 
 ## compute the ranges to be displayed, plus a total index comprising all ranges.
 function compute_range(v::AbstractIndex, maxn, n)
@@ -152,21 +124,30 @@ function show(
     io::IO,
     m::Union{AbstractIndicesMatrix,NamedIndicesMatrix},
     maxnrow::Int,
+    dimnames_separator::Union{AbstractString,AbstractChar}=" ╲ "
    )
     nrow, ncol = size(m)
     limit = get(io, :limit, true)
     ## rows
     rowrange, totrowrange = compute_range(axes(m, 1), maxnrow, nrow)
-    s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
+    if m isa NamedIndicesMatrix
+        s = [sprint(show, parent(parent(m))[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
+    else
+        s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
+    end
     rowname = keys(axes(m, 1))
     colname = keys(axes(m, 2))
     strlen(x) = length(string(x))
     colwidth = max(maximum(map(length, s)), maximum(map(strlen, colname)))
 
     dn = dimnames(m)
-    dimnames_separator = isnothing(dn) ? "" : "  ╲ "
-    dn = isnothing(dn) ? ("","") : dn
-    rownamewidth = max(maximum(map(strlen, rowname)), sum(map(length, string.(dn)))+3)
+    if dn == (:_, :_)
+        dns = ""
+        dn = ("", "")
+    else
+        dns = dimnames_separator
+    end
+    rownamewidth = max(maximum(map(strlen, rowname)), sum(map(length, string.(dn)))+length(dns))
     if limit
         maxncol = div(displaysize(io)[2] - rownamewidth - 4, colwidth+2) # dots, spaces between
     else
@@ -176,7 +157,7 @@ function show(
     ## columns
     colrange, totcorange = compute_range(axes(m, 1), maxncol, ncol)
     ## header
-    header = sprint_row(rownamewidth, rightalign(join(string.(dn), dimnames_separator), rownamewidth),
+    header = sprint_row(rownamewidth, rightalign(join(string.(dn), dns), rownamewidth),
                         colwidth, map(i->colname[i], colrange))
     println(io, header)
     print(io, "─"^(rownamewidth+1), "─", "─"^(length(header)-rownamewidth-2))
@@ -210,13 +191,17 @@ end
 
 function show(
     io::IO,
-    v::AbstractIndicesVector,
+    v::Union{AbstractIndicesVector,NamedIndicesVector},
     maxnrow::Int
    )
     nrow = size(v, 1)
     rownames = values(axes(v,1))
     rowrange, totrowrange = compute_range(axes(v, 1), maxnrow, nrow)
-    s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
+    if v isa NamedIndicesVector
+        s = [sprint(show, parent(parent(v))[i], context=:compact => true) for i=totrowrange]
+    else
+        s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
+    end
     colwidth = maximum(map(length,s))
     rownamewidth = max(maximum(map(length, rownames)), 1+length(strdimnames(v)[1]))
     ## header
@@ -239,41 +224,3 @@ function show(
         end
     end
 end
-#=
-function Base.show(
-    io::IO,
-    x::AbstractVector,
-    row_name_separator::Union{AbstractString,AbstractChar}=" - ",
-    row_value_separator::Union{AbstractString,AbstractChar}=" ",
-   )
-    sz = displaysize(io)
-    size_x = length(x)
-    if size_x > first(sz)
-        half_sz = div(first(sz), 2)
-        inds = (1:half_sz, (size_x - half_sz):size_x)
-    else
-        inds = 1:size_x
-    end
-    show_rows(io, x, inds, row_name_separator, row_value_separator)
-end
-
-function show_rows(
-    io::IO,
-    x::AbstractIndex,
-    row_indices::AbstractVector,
-    row_name_separator::Union{AbstractString,AbstractChar},
-    row_value_separator::Union{AbstractString,AbstractChar}
-   )
-    size_max = 0
-    for i in row_indices
-        size_max = max(size_max, length(string(keys(x)[i])))
-    end
-    for i in row_indices
-        print(io, lpad(string(keys(x)[i]), size_max))
-        print(io, row_name_separator)
-        print(io, string(to_index(x, i)))
-        print(io, "\n")
-    end
-end
-
-=#

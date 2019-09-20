@@ -179,3 +179,7 @@ end
 asindex(keys::AbstractVector) = asindex(keys, axes(keys, 1))
 
 asindex(a::AbstractIndex) = a
+
+
+# TODO Is this the best way to handle this?
+Base.UnitRange(a::AbstractIndex) = UnitRange(keys(a))
