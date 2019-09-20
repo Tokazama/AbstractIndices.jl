@@ -14,6 +14,7 @@ export AbstractIndex,
        NamedIndex,
        AbstractIndicesArray,
        IndicesArray,
+       NamedAxes,
        # methods
        stepindex,
        asindex,
@@ -32,13 +33,14 @@ const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
 
 # TODO remove this once implemented in NamedDims
-dimnames(::NamedDimsArray{names}) where {names} = names
-dimnames(::NamedDimsArray{names}, i) where {names} = names[i]
-dimnames(::AbstractArray) = nothing
+dimnames(::T) where {T} = dimnames(T)
+dimnames(::Type{<:NamedDimsArray{names}}) where {names} = names
+dimnames(::Type{<:AbstractArray{T, N}}) where {T, N} = ntuple(_->:_, N)
 
 include("utils.jl")
 include("abstractindex.jl")
 include("abstractindicesarray.jl")
+include("checkbounds.jl")
 include("indexing.jl")
 include("axes.jl")
 include("indicesarray.jl")

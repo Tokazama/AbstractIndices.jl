@@ -1,4 +1,7 @@
 
+###
+### AbstractIndex
+###
 function show_rows(
     io::IO,
     row_name::Union{AbstractString,AbstractChar},
@@ -20,12 +23,9 @@ function show_rows(
     print(io, "\n")
 end
 
-function col_width()
+function show(io::IO, ::MIME"text/plain", a::AbstractIndex)
+    show_index(io, keys(a), values(a))
 end
-
-show(io::IO, ::MIME"text/plain", a::AbstractIndex) = show_index(io, keys(a), values(a))
-
-sprint_colpart(width::Int, s::AbstractVector) = join(map(s->lpad(s, width, " "), s), "  ")
 
 function show_index(io::IO, ks::AbstractRange, vs::AbstractRange)
     print(io, "Index: $(ks) => $(vs)")
@@ -34,11 +34,23 @@ end
 function show_index(io::IO, ks::TupOrVec, vs::TupOrVec)
     print(io, "Index: \n")
     for (k,v) in zip(ks,vs)
-        print(io, "$(k) => $(v)")
+        print(io, " $(k) => $(v)")
+        print(io, "\n")
     end
 end
 
+###
+### Array show
+###
+
+function Base.summary(a::AbstractIndicesArray{T,N}) where {T,N}
+    string(join(size(a), "×"), " ", typeof(a).name, "{", T, ",", N, "}")
+end
+
+
 Base.show(io::IO, ::MIME"text/plain", n::AbstractIndicesArray) = show(io, n)
+
+sprint_colpart(width::Int, s::AbstractVector) = join(map(s->lpad(s, width, " "), s), "  ")
 
 function show(io::IO, v::AbstractIndicesVector)
     println(io, summary(v))
@@ -66,7 +78,6 @@ function show(
     else
         show(io, m, size(m, 1))
     end
-
 end
 
 ## ndims==1 is dispatched below
@@ -94,10 +105,10 @@ function show(
             print(io, "\n⋮")
             break
         end
-        cartnames = [string(dn[2+i], "=", axes(a, 2+i)[ind]) for (i, ind) in enumerate(idx.I)]
+        cartnames = [string(dn[2+i], keys(axes(a, 2+i))[ind]) for (i, ind) in enumerate(idx.I)]
         println(io, "\n")
         println(io, "[:, :, ", join(cartnames, ", "), "] =")
-        show(io, a[:, :, idx], maxnrow)
+        show(io, a[:, :, map(CartesianIndex, idx.I)...], maxnrow)
         i += 1
     end
 end
@@ -105,7 +116,7 @@ end
 #show(io::IO, x::NamedVector) = invoke(show, (IO, NamedArray), io, x)
 
 ## compute the ranges to be displayed, plus a total index comprising all ranges.
-function compute_range(maxn, n)
+function compute_range(v::AbstractIndex, maxn, n)
     if maxn < n
         hn = div(maxn, 2)
         r = (CartesianIndex(1):CartesianIndex(hn), CartesianIndex(n-hn+1):CartesianIndex(n))
@@ -140,19 +151,20 @@ end
 function show(
     io::IO,
     m::Union{AbstractIndicesMatrix,NamedIndicesMatrix},
-    maxnrow::Int
+    maxnrow::Int,
    )
     nrow, ncol = size(m)
     limit = get(io, :limit, true)
     ## rows
-    rowrange, totrowrange = compute_range(maxnrow, nrow)
-    s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=1:ncol]
+    rowrange, totrowrange = compute_range(axes(m, 1), maxnrow, nrow)
+    s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
     rowname = keys(axes(m, 1))
     colname = keys(axes(m, 2))
     strlen(x) = length(string(x))
     colwidth = max(maximum(map(length, s)), maximum(map(strlen, colname)))
 
     dn = dimnames(m)
+    dimnames_separator = isnothing(dn) ? "" : "  ╲ "
     dn = isnothing(dn) ? ("","") : dn
     rownamewidth = max(maximum(map(strlen, rowname)), sum(map(length, string.(dn)))+3)
     if limit
@@ -162,29 +174,29 @@ function show(
     end
 
     ## columns
-    colrange, totcorange = compute_range(maxncol, ncol)
+    colrange, totcorange = compute_range(axes(m, 1), maxncol, ncol)
     ## header
-    header = sprint_row(rownamewidth, rightalign(join(string.(dn), "  ╲ "), rownamewidth),
+    header = sprint_row(rownamewidth, rightalign(join(string.(dn), dimnames_separator), rownamewidth),
                         colwidth, map(i->colname[i], colrange))
     println(io, header)
     print(io, "─"^(rownamewidth+1), "─", "─"^(length(header)-rownamewidth-2))
     ## data
     l = 1
-    for i in 1:length(rowrange)
-        if i > 1
+    for i in CartesianIndices((length(rowrange),))
+        if first(i.I) > 1
             vdots = map(i->["⋮" for i=1:length(i)], colrange)
-            println(io)
+            print(io, "\n")
             print(io, sprint_row(rownamewidth, "⋮", colwidth, vdots, dots="⋱", sep="   "))
         end
         r = rowrange[i]
         for j in CartesianIndices((length(r),))
             row = s[l,:]
-            if (i == 1 && j == 1) || (i == length(rowrange) && j == length(r))
+            if (first(i.I) == 1 && first(j.I) == 1) || (first(i.I) == length(rowrange) && first(j.I) == length(r))
                 dots = "…"
             else
                 dots = " "
             end
-            println(io)
+            print(io, "\n")
             print(io, sprint_row(rownamewidth, rowname[totrowrange[l]], colwidth,
                                  map(r -> row[r], colrange), dots=dots))
             l += 1
@@ -203,7 +215,7 @@ function show(
    )
     nrow = size(v, 1)
     rownames = values(axes(v,1))
-    rowrange, totrowrange = compute_range(maxnrow, nrow)
+    rowrange, totrowrange = compute_range(axes(v, 1), maxnrow, nrow)
     s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
     colwidth = maximum(map(length,s))
     rownamewidth = max(maximum(map(length, rownames)), 1+length(strdimnames(v)[1]))

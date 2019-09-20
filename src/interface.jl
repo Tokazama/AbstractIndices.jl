@@ -26,10 +26,14 @@ HasAxes(::Type{T}) where T<:AbstractArray = HATrue
 
 const NamedIndicesArray{L,T,N,Ax,D} = NamedDimsArray{L,T,N,IndicesArray{T,N,Ax,D}}
 
-const NamedIndicesMatrix{L,T,Ax,D<:AbstractMatrix{T}} = NamedIndicesArray{L,T,2,Ax,D}
+const NamedIndicesMatrix{L,T,Ax1,Ax2,D<:AbstractMatrix{T}} = NamedIndicesArray{L,T,2,Tuple{Ax1,Ax2},D}
+
+const NamedIndicesVector{L,T,Ax1,D<:AbstractVector{T}} = NamedIndicesArray{L,T,1,Tuple{Ax1},D}
 
 function NamedIndicesArray(a::AbstractArray, axs::NamedAxes)
-    IndicesArray(NamedDimsArray(dimnames(axs), a), unname(axs))
+    NamedDimsArray(IndicesArray(a, axs), dimnames(axs))
 end
+
+NamedIndicesArray(a::AbstractIndicesArray) = NamedDimsArray(a, dimnames(a))
 
 NamedIndicesArray(a::AbstractArray; kwargs...) = NamedIndicesArray(a, NamedAxes(; kwargs...))

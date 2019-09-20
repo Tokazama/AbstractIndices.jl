@@ -37,14 +37,16 @@ end
 
 for fun in (:cor, :cov)
     @eval function Statistics.$fun(a::AbstractIndicesMatrix; dims=1, kwargs...)
-        return similar(a, Statistics.$fun(parent(a); dims=dims, kwargs...), symmetric_axes(axes(a), dims))
+        return similar(a,
+                       Statistics.$fun(parent(a); dims=dims, kwargs...),
+                       symmetric_axes(axes(a), dims))
     end
 end
 
 function symmetric_axes(axs::Tuple{Vararg{Any,2}}, d::Int)
-    if dims == 1
+    if d == 1
         return (last(axs), last(axs))
-    elseif dims == 2
+    elseif d == 2
         return (first(axs), first(axs))
     end
 end

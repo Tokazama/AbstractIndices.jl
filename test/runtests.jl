@@ -31,7 +31,10 @@ using AbstractIndices, Test
         i, state = iterate(symbol_index, state)
         @test (i, state) == (3, 3)
 
+        @test collect(pairs(symbol_index)) == [:one => 1, :two => 2, :three => 3]
+
    end
+
 end
 
 @testset "AbstractIndicesArrays" begin
@@ -87,25 +90,29 @@ end
         @test checkbounds(Bool, Aindices, 61) == false
         @test checkbounds(Bool, Anamed, 61) == false
 
-        #=
         @test checkbounds(Bool, Aoneto, 2, 2, 2, 1) == true
-        @test checkbounds(Bool, Aindices, 2, 2, 2, 1) == true
-        @test checkbounds(Bool, Aoneto, 2, 2, 2, 2) == false
-        @test checkbounds(Bool, Aindices, 2, 2, 2, 2) == false
+        @test checkbounds(Bool, Aindices, r1[2], r2[2], r3[2], 1) == true
 
-        @test checkbounds(Bool, A, 1, 1)  == false
+        @test checkbounds(Bool, Aoneto, 2, 2, 2, 2) == false
+        @test checkbounds(Bool, Aindices, r1[2], r2[2], r3[2], 2) == false
+
+
+        #=
+        @test checkbounds(Bool, Aoneto, 1, 1)  == false
+        @test checkbounds(Bool, Aindices, r1[1], r2[1])  == false
         @test checkbounds(Bool, A, 1, 12) == false
         @test checkbounds(Bool, A, 5, 12) == false
         @test checkbounds(Bool, A, 1, 13) == false
         @test checkbounds(Bool, A, 6, 12) == false
-        @test checkbounds(Bool, A, 0, 1, 1) == false
-        @test checkbounds(Bool, A, 1, 0, 1) == false
-        @test checkbounds(Bool, A, 1, 1, 0) == false
-        @test checkbounds(Bool, A, 6, 4, 3) == false
-        @test checkbounds(Bool, A, 5, 5, 3) == false
-        @test checkbounds(Bool, A, 5, 4, 4) == false
         =#
-    end
+
+        @test checkbounds(Bool, Aoneto, 0, 1, 1) == false
+        @test checkbounds(Bool, Aoneto, 1, 0, 1) == false
+        @test checkbounds(Bool, Aoneto, 1, 1, 0) == false
+        @test checkbounds(Bool, Aoneto, 6, 4, 3) == false
+        @test checkbounds(Bool, Aoneto, 5, 5, 3) == false
+        @test checkbounds(Bool, Aoneto, 5, 4, 4) == false
+   end
 
     @testset "Vector indexing" begin
         @test getindex(Aindices, r1, r2, r3) == getindex(A, 1:5, 1:4, 1:3)
@@ -153,3 +160,6 @@ end
 end
 
 
+@testset "math" begin
+    Anamed = NamedIndicesArray(rand(4,4), a = 2:3, b = 3:4)
+end

@@ -31,10 +31,33 @@ stepindex(a::AbstractIndex) = step(keys(a))
 
 Base.lastindex(a::AbstractIndex) = last(keys(a))
 
-
 Base.iterate(a::AbstractIndex) = iterate(values(a))
 
 Base.iterate(a::AbstractIndex, state) = iterate(values(a), state)
+
+Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
+
+Base.eachindex(a::AbstractIndex) = values(a)
+
+unname(a::AbstractIndex) = a
+
+"""
+    SingleIndex
+
+Represents a single point along an index. Useful for dimensions of length 1.
+"""
+struct SingleIndex{K,V} <: AbstractIndex{K,V}
+    _key::K
+    _val::V
+end
+
+Base.length(::SingleIndex) = 1
+
+keys(si::SingleIndex) = si._key
+values(si::SingleIndex) = si._val
+
+SingleIndex(a::AbstractIndex{K,V}) where {K,V} = SingleIndex(one(K),one(V))
+
 
 """
     OneToIndex
@@ -51,8 +74,6 @@ struct OneToIndex{K,KV} <: AbstractIndex{K,Int}
         new{K,KV}(keys)
     end
 end
-
-    
 
 OneToIndex(keys::TupOrVec{K}) where {K} = OneToIndex{K,typeof(keys)}(keys)
 
@@ -127,8 +148,11 @@ unname(ni::NamedIndex) = ni.index
 (name::Symbol)(a::AbstractIndex) = NamedIndex{name}(a)
 
 NamedIndex{name}(ni::AbstractVector) where {name} = NamedIndex{name}(asindex(ni))
-NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V} = NamedIndex{name,TA,TI,typeof(ni)}(ni)
+NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V} = NamedIndex{name,K,V,typeof(ni)}(ni)
 NamedIndex{name}(ni::NamedIndex{name,K,V}) where {name,K,V} = ni
+
+
+const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
 
 """
 

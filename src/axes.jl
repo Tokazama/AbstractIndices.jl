@@ -2,7 +2,7 @@
 # have been optimized for performance.
 
 const NamedAxes{N} = Tuple{Vararg{<:AbstractIndex,N}}
-NamedAxes(; kwargs...) = Tuple([NamedIndex{k}(v) for (k,v) in named_pairs])
+NamedAxes(; kwargs...) = Tuple([NamedIndex{k}(v) for (k,v) in kwargs])
 
 dimnames(axs::NamedAxes) = dimnames.(axs)
 unname(axs::NamedAxes) = unname.(axs)

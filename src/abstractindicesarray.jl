@@ -21,6 +21,8 @@ Base.isempty(a::AbstractIndicesArray) = isempty(parent(a))
 
 Base.length(a::AbstractIndicesArray) = length(parent(a))
 
+Base.similar(::A, args...) where {A<:AbstractIndicesArray} = similar(A, args...)
+
 
 #= TODO think about what makes sense for setting in indices
 function Base.setindex!(ai::AxisIndex, val::Any, i::Any)

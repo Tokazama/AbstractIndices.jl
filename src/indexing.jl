@@ -1,40 +1,4 @@
 ###
-### checkindex
-###
-
-checkbounds(::Type{Bool}, x::AbstractIndex, i) = checkindex(Bool, x, i)
-
-function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::K) where {K,V}
-    firstindex(x) <= i <= lastindex(x)
-end
-
-function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::Int) where {K,V}
-    firstindex(values(x)) <= i <= lastindex(values(x))
-end
-
-function checkindex(::Type{Bool}, x::AbstractIndex{Int,V}, i::Int) where {V}
-    i in keys(x)
-end
-
-function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::AbstractVector{Int}) where {K,V}
-    checkindex(Bool, values(x), i)
-end
-
-function checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::AbstractVector{K}) where {K,V}
-    issubset(i, keys(x))
-end
-
-function checkindex(::Type{Bool}, x::AbstractIndex{Int,V}, i::AbstractVector{Int}) where {V}
-    issubset(i, keys(x))
-end
-
-function checkindex(::Type{Bool}, x::AbstractIndex, i::CartesianIndex{1})
-    checkindex(Bool, x, first(i.I))
-end
-
-checkindex(::Type{Bool}, x::AbstractIndex{K,V}, ::Colon) where {K,V} = true
-
-###
 ### to_index
 ###
 to_index(a::AbstractIndex{K,V}, i::K) where {K,V} = getindex(values(a), _to_index(keys(a), i))
@@ -76,9 +40,7 @@ to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
 ### AbstractIndex getindex
 ###
 function Base.getindex(a::AbstractIndex, i::Any)
-    @boundscheck if !checkindex(Bool, a, i)
-        throw(BoundsError(a, i))
-    end
+    @boundscheck checkindex(Bool, a, i)
     @inbounds to_index(a, i)
 end
 
@@ -88,31 +50,11 @@ function getindex(A::AbstractArray{T,N}, i::Vararg{AbstractIndex,N}) where {T,N}
     getindex(A, to_indices(A, i))
 end
 
-
 Base.LinearIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N} = LinearIndices(values.(axs))
 
 Base.CartesianIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N} = CartesianIndices(values.(axs))
 
 Base.Slice(x::AbstractIndex) = Base.Slice(values(x))
-
-"""
-    SingleIndex
-
-Represents a single point along an index. Useful for dimensions of length 1.
-"""
-struct SingleIndex{K,V} <: AbstractIndex{K,V}
-    _key::K
-    _val::V
-end
-
-Base.length(::SingleIndex) = 1
-
-keys(si::SingleIndex) = si._key
-values(si::SingleIndex) = si._val
-
-SingleIndex(a::AbstractIndex{K,V}) where {K,V} = SingleIndex(one(K),one(v))
-
-const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
 
 ###
 ### AbstractIndicesArray getindex
@@ -136,16 +78,40 @@ function Base.getindex(a::AbstractIndicesArray{T,N}, i::Any) where {T,N}
     @inbounds getindex(parent(a), i)
 end
 
-function Base.getindex(a::AbstractIndicesArray{T,N}, i, ii...) where {T,N}
-    @boundscheck checkbounds(a, i, ii...)
-    @inbounds _getindex(typeof(a), parent(a), axes(a), (i, ii...))
+
+function Base.getindex(a::AbstractIndicesArray{T,N}, i...) where {T,N}
+    _getindex(typeof(a), parent(a), axes(a), i)
 end
 
-function _getindex(::Type{A}, a::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractIndex,N}}, i::Tuple{Vararg{Any,N}}) where {A<:AbstractIndicesArray,T,N}
+#=
+
+function Base.getindex(a::AbstractIndicesArray{T,N}, i, ii...) where {T,N}
+   # @boundscheck checkbounds(a, i, ii...)
+   # @inbounds
+
+    _getindex(typeof(a), parent(a), axes(a), (i, ii...))
+end
+
+=#
+
+function _getindex(
+    ::Type{A},
+    a::AbstractArray,
+    axs::Tuple{Vararg{<:AbstractIndex}},
+    i::Tuple{Vararg{Any}}
+   ) where {A<:AbstractIndicesArray}
+
     maybe_indicesarray(A, a[map(to_index, axs, i)...], _drop_empty(map(getindex, axs, i)))
 end
 
-maybe_indicesarray(::Type{A}, a::AbstractArray, axs::Tuple) where {A<:AbstractIndicesArray} = similar(A, a, axs)
+function maybe_indicesarray(
+    ::Type{A},
+    newarray::AbstractArray,
+    axs::Tuple
+   ) where {A<:AbstractIndicesArray}
+
+    similar(A, newarray, axs)
+end
 
 maybe_indicesarray(::Type{A}, a::Any, axs::Tuple{}) where {A<:AbstractIndicesArray} = a
 
