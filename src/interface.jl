@@ -37,3 +37,15 @@ end
 NamedIndicesArray(a::AbstractIndicesArray) = NamedDimsArray(a, dimnames(a))
 
 NamedIndicesArray(a::AbstractArray; kwargs...) = NamedIndicesArray(a, NamedAxes(; kwargs...))
+
+
+# FIXME: I had to define these functions to get test to pass but I assume that
+# this should be possible to handle solely within NamedDims
+Base.:(==)(a::NamedDimsArray, b::AbstractIndicesArray) = parent(a) == parent(b)
+Base.:(==)(b::AbstractIndicesArray, a::NamedDimsArray) = parent(a) == parent(b)
+
+
+Base.has_offset_axes(a::NamedIndicesArray) = has_offset_axes(parent(a))
+
+Statistics.cov(a::NamedIndicesVector) = Statistics.cov(parent(parent(a)))
+

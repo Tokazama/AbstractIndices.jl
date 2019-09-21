@@ -2,12 +2,17 @@ module AbstractIndices
 
 using LinearAlgebra, Statistics, NamedDims
 
-import Base: length, axes, getindex, checkindex, checkbounds
-import Base: to_index, OneTo, tail, show, to_dim, values, keys
+import Base: length, axes, getindex, iterate, checkindex, checkbounds
+
+# iterators
+import Base: iterate, isdone, has_offset_axes
 import Base.Iterators: Pairs
+
+import Base: to_index, OneTo, tail, show, to_dim, values, keys
 import NamedDims: unname
 
 export AbstractIndex,
+       IndexPosition,
        AxisIndex,
        OneToIndex,
        StaticKeys,
@@ -39,6 +44,7 @@ dimnames(::Type{<:AbstractArray{T, N}}) where {T, N} = ntuple(_->:_, N)
 
 include("utils.jl")
 include("abstractindex.jl")
+include("abstractposition.jl")
 include("abstractindicesarray.jl")
 include("checkbounds.jl")
 include("indexing.jl")

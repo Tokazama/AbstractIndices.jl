@@ -2,7 +2,7 @@
     AbstractIndicesArray
 
 """
-abstract type AbstractIndicesArray{T,N,A<:Tuple{Vararg{<:AbstractIndex,N}},D<:AbstractArray{T,N}} <: AbstractArray{T,N} end
+abstract type AbstractIndicesArray{T,N,A<:Tuple{Vararg{<:AbstractIndex,N}},D<:AbstractArray{T,N},F} <: AbstractArray{T,N} end
 
 const AbstractIndicesMatrix{T,A,D} = AbstractIndicesArray{T,2,A,D}
 
@@ -21,8 +21,10 @@ Base.isempty(a::AbstractIndicesArray) = isempty(parent(a))
 
 Base.length(a::AbstractIndicesArray) = length(parent(a))
 
-Base.similar(::A, args...) where {A<:AbstractIndicesArray} = similar(A, args...)
+Base.has_offset_axes(::A) where {A<:AbstractIndicesArray} = has_offset_axes(A)
+Base.has_offset_axes(::Type{<:AbstractIndicesArray{T,N,A,D,F}}) where {T,N,A,D,F} = F
 
+Base.similar(::A, args...) where {A<:AbstractIndicesArray} = similar(A, args...)
 
 #= TODO think about what makes sense for setting in indices
 function Base.setindex!(ai::AxisIndex, val::Any, i::Any)
@@ -70,6 +72,13 @@ Base.one(a::AbstractIndicesArray) = similar(a, one(parent(a)), axes(a))
 
 Base.copy(a::AbstractIndicesArray) = similar(a, copy(parent(a)), axes(a))
 
+Base.:(==)(a::AbstractIndicesArray, b::AbstractIndicesArray) = parent(a) == parent(b)
+Base.:(==)(a::AbstractArray, b::AbstractIndicesArray) = a == parent(b)
+Base.:(==)(a::AbstractIndicesArray, b::AbstractArray) = parent(a) == b
+
+Base.isequal(a::AbstractIndicesArray, b::AbstractIndicesArray) = isequal(parent(a), parent(b))
+Base.isequal(a::AbstractArray, b::AbstractIndicesArray) = isequal(a, parent(b))
+Base.isequal(a::AbstractIndicesArray, b::AbstractArray) = isequal(parent(a), b)
 
 
 #= TODO

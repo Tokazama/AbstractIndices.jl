@@ -22,41 +22,27 @@ Base.step(a::AbstractIndex) = step(values(a))
 
 Base.firstindex(a::AbstractIndex) = first(keys(a))
 
-"""
-    stepindex(x) -> Real
-
-Returns the step size of the index.
-"""
-stepindex(a::AbstractIndex) = step(keys(a))
+Base.isempty(a::AbstractIndex) = length(a) == 0
 
 Base.lastindex(a::AbstractIndex) = last(keys(a))
 
-Base.iterate(a::AbstractIndex) = iterate(values(a))
-
-Base.iterate(a::AbstractIndex, state) = iterate(values(a), state)
 
 Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
-Base.eachindex(a::AbstractIndex) = values(a)
+Base.eachindex(a::AbstractIndex) = keys(a)
 
 unname(a::AbstractIndex) = a
 
-"""
-    SingleIndex
-
-Represents a single point along an index. Useful for dimensions of length 1.
-"""
-struct SingleIndex{K,V} <: AbstractIndex{K,V}
-    _key::K
-    _val::V
+@inline function Base.:(==)(a::AbstractIndex, b::AbstractIndex)
+    isequal(keys(a), keys(b)) & isequal(values(a), values(b))
 end
 
-Base.length(::SingleIndex) = 1
+function Base.getindex(a::AbstractIndex, i::Any)
+    @boundscheck checkindex(Bool, a, i)
+    @inbounds to_index(a, i)
+end
 
-keys(si::SingleIndex) = si._key
-values(si::SingleIndex) = si._val
-
-SingleIndex(a::AbstractIndex{K,V}) where {K,V} = SingleIndex(one(K),one(V))
+Base.getindex(a::AbstractIndex, i::Colon) = a
 
 
 """
@@ -75,7 +61,9 @@ struct OneToIndex{K,KV} <: AbstractIndex{K,Int}
     end
 end
 
+OneToIndex(keys::OneToIndex) = keys
 OneToIndex(keys::TupOrVec{K}) where {K} = OneToIndex{K,typeof(keys)}(keys)
+Base.allunique(::OneToIndex) = true  # determined at time of construction
 
 length(x::OneToIndex) = length(keys(x))
 
@@ -83,6 +71,41 @@ values(x::OneToIndex) = OneTo(length(x))
 values(x::OneToIndex, i::Int) = i
 keys(x::OneToIndex) = x._keys
 
+function getindex(a::OneToIndex{K,KV}, i::K) where {K,KV<:TupOrVec{K}}
+    @boundscheck checkbounds(a, i)
+    findfirst(isequal(i), keys(a))
+end
+
+function getindex(a::OneToIndex{K,<:AbstractRange}, i::K) where {K}
+    v = searchsortedfirst(keys(a), i)
+    if isnothing(v)
+        throw(BoundsError(a, i))
+    end
+    return v
+end
+
+function getindex(a::OneToIndex{Int,<:OneTo}, i::Int)
+    @boundscheck if i > length(a)
+        throw(BoundsError(a, i))
+    end
+    return i
+end
+
+function getindex(a::OneToIndex{K,<:AbstractUnitRange}, i::K) where {K}
+    v = (i - firstindex(a)) + 1
+    @boundscheck if 1 > v > length(a)
+        throw(BoundsError(a, i))
+    end
+    return v
+end
+
+function getindex(a::OneToIndex{K,<:StepRange}, i::K) where {K}
+    v = div((i - firstindex(a)) + 1, step(keys(a)))
+    @boundscheck if 1 > v > length(a)
+        throw(BoundsError(a, i))
+    end
+    return v
+end
 
 
 """
@@ -105,6 +128,7 @@ function AxisIndex(keys::TupOrVec{K}, values::TupOrVec{V}) where {K,V}
     AxisIndex{K,V,typeof(keys),typeof(values)}(keys, values)
 end
 
+Base.allunique(::AxisIndex) = true  # determined at time of construction
 AxisIndex(keys::TupOrVec) = AxisIndex(keys, axes(keys, 1))
 
 keys(x::AxisIndex) = x._keys
@@ -123,7 +147,7 @@ struct StaticKeys{Keys,K} <: AbstractIndex{K,Int}
         new{Keys,K}()
     end
 end
-
+Base.allunique(::StaticKeys) = true  # determined at time of construction
 StaticKeys(Keys::NTuple{N,K}) where {N,K} = StaticKeys{Keys,K}()
 
 values(sk::StaticKeys) = OneTo(length(sk))
@@ -144,11 +168,15 @@ values(ni::NamedIndex) = values(ni.index)
 dimnames(::NamedIndex{name}) where {name} = name
 unname(ni::NamedIndex) = ni.index
 
+Base.allunique(ni::NamedIndex) = allunique(ni.index)
+
 # TODO revisit this constructor. seems a bit odd but might be nice to have
 (name::Symbol)(a::AbstractIndex) = NamedIndex{name}(a)
 
 NamedIndex{name}(ni::AbstractVector) where {name} = NamedIndex{name}(asindex(ni))
-NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V} = NamedIndex{name,K,V,typeof(ni)}(ni)
+function NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V}
+    NamedIndex{name,K,V,typeof(ni),has_offset_axes(ni)}(ni)
+end
 NamedIndex{name}(ni::NamedIndex{name,K,V}) where {name,K,V} = ni
 
 
@@ -176,10 +204,15 @@ function asindex(keys::NTuple{N,T}, index::AbstractVector) where {N,T}
     end
 end
 
-asindex(keys::AbstractVector) = asindex(keys, axes(keys, 1))
+# get rid of indirection (try not to nest index
+asindex(ks::AbstractIndex, vs::AbstractIndex) = asindex(keys(ks), values(vs))
+
+asindex(ks::AbstractVector) = asindex(ks, axes(ks, 1))
 
 asindex(a::AbstractIndex) = a
 
+Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
 
 # TODO Is this the best way to handle this?
-Base.UnitRange(a::AbstractIndex) = UnitRange(keys(a))
+Base.UnitRange(a::AbstractIndex) = UnitRange(values(a))
+Base.UnitRange{Int}(a::AbstractIndex) = UnitRange(values(a))

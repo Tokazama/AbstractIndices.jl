@@ -41,10 +41,12 @@ function show(io::IO, v::Union{AbstractIndicesVector,NamedIndicesVector})
     end
 end
 
+function show(io::IO, ::MIME"text/plain", m::Union{AbstractIndicesMatrix,NamedIndicesMatrix})
+    show(io, m)
+end
 
 function show(
     io::IO,
-    ::MIME"text/plain",
     m::Union{AbstractIndicesMatrix,NamedIndicesMatrix}
    )
     print(io, summary(m))
@@ -133,6 +135,7 @@ function show(
     if m isa NamedIndicesMatrix
         s = [sprint(show, parent(parent(m))[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
     else
+        # FIXME
         s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
     end
     rowname = keys(axes(m, 1))
@@ -202,11 +205,18 @@ function show(
     else
         s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
     end
+    dn = dimnames(v)
+    if dn == (:_,)
+        dn = ""
+    else
+        dn = string(first(dn))
+    end
+ 
     colwidth = maximum(map(length,s))
-    rownamewidth = max(maximum(map(length, rownames)), 1+length(strdimnames(v)[1]))
+    rownamewidth = max(maximum(map(length, rownames)), 1+length(dn))
     ## header
-    println(io, string(leftalign(strdimnames(v, 1), rownamewidth), " │ "))
-    print(io, "─"^(rownamewidth+1), "┼", "─"^(colwidth+1))
+    println(io, string(leftalign(dn, rownamewidth), " │ "))
+    print(io, "─"^(rownamewidth+1), "─", "─"^(colwidth+1))
     ## data
     l = 1
     for i in 1:length(rowrange)

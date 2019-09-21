@@ -1,15 +1,24 @@
 """
     IndicesArray
 """
-struct IndicesArray{T,N,A<:Tuple{Vararg{<:AbstractIndex,N}},D<:AbstractArray{T,N}} <: AbstractIndicesArray{T,N,A,D}
+struct IndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractIndicesArray{T,N,A,D,F}
     parent::D
     axes::A
 end
 
 function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractVector,N}}) where {T,N}
     newaxs = map(asindex, axs, axes(x))
-    IndicesArray{T,N,typeof(newaxs),typeof(x)}(x, newaxs)
+    f = false
+    for i in newaxs
+        if first(i) != i[1]
+            f = true
+            break
+        end
+    end
+    IndicesArray{T,N,typeof(newaxs),typeof(x),f}(x, newaxs)
 end
+
+
 
 IndicesArray(x::AbstractArray, axs::Vararg) = IndicesArray(x, Tuple(axs))
 

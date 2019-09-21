@@ -1,17 +1,31 @@
+###
+### to_index: bounds are checked already
+###
 
-Base.has_offset_axes(::OneToIndex) = false
-Base.has_offset_axes(::StaticKeys) = false
-Base.has_offset_axes(a::AbstractIndex) = !isone(firstindex(a))
-###
-### to_index
-###
-to_index(a::AbstractIndex{K,V}, i::K) where {K,V} = getindex(values(a), _to_index(keys(a), i))
+function to_index(a::AbstractIndex{K,V}, i::K) where {K,V}
+    getindex(values(a), _to_index(keys(a), i))
+end
 
 # ketype is not Int so assume user wants to directly go to index
 to_index(a::AbstractIndex{K,V}, i::Int) where {K,V} = getindex(values(a), i)
 
 # keytype is Int so assume user is interfacing to index through the axis
-to_index(a::AbstractIndex{Int,V}, i::Int) where {K,V} = getindex(values(a), _to_index(keys(a), i))
+function to_index(a::AbstractIndex{Int,V}, i::Int) where {K,V}
+    getindex(values(a), _to_index(keys(a), i))
+end
+
+function to_index(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
+    if a == parent(i)
+        return values(i)
+    else
+        # TODO don't know if this is the best outcome but should be rare
+        to_index(a, values(i))
+    end
+end
+
+to_index(a::AbstractPosition) = values(a)
+
+to_index(a::AbstractVector, i::AbstractPosition) = values(i)
 
 to_index(a::AbstractIndex{K,V}, i::CartesianIndex{1}) where{K,V} = getindex(values(a), i)
 
@@ -40,16 +54,9 @@ end
 
 to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
 
-
 ###
 ### AbstractIndex getindex
 ###
-function Base.getindex(a::AbstractIndex, i::Any)
-    @boundscheck checkindex(Bool, a, i)
-    @inbounds to_index(a, i)
-end
-
-Base.getindex(a::AbstractIndex, i::Colon) = a
 
 function getindex(A::AbstractArray{T,N}, i::Vararg{AbstractIndex,N}) where {T,N}
     getindex(A, to_indices(A, i))
@@ -61,9 +68,27 @@ Base.CartesianIndices(axs::Tuple{Vararg{<:AbstractIndex,N}}) where {N} = Cartesi
 
 Base.Slice(x::AbstractIndex) = Base.Slice(values(x))
 
-###
-### AbstractIndicesArray getindex
-###
+function Base.getindex(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
+    @boundscheck checkindex(Bool, a, i)
+    return values(i)
+end
+
+# fall back to the value/index when indexing a non AbstractIndex
+#function Base.getindex(a::AbstractArray, i::AbstractPosition)
+#    @boundscheck checkindex(Bool, a, values(i))
+#    @inbounds getindex(a, values(i))
+#end
+#const Union{AbstractPosition,Symbol,Colon,AbstractVector}
+
+#function Base.getindex(a::AbstractArray, i::Vararg{})
+#    @boundscheck checkindex(Bool, a, values(i))
+#    @inbounds getindex(a, values(i))
+#end
+
+
+@inline function Base.:(==)(a::AbstractPosition, b::AbstractPosition)
+    isequal(parent(a), parent(b)) & isequal(positionstate(a), positionstate(b))
+end
 
 Base.getindex(a::AbstractIndicesArray{T,N}, i::Colon) where {T,N} = a
 
@@ -71,22 +96,22 @@ function Base.getindex(a::AbstractIndicesArray{T,N}, i::CartesianIndex{N}) where
     getindex(parent(a), i)
 end
 
-function Base.getindex(a::AbstractIndicesArray{T,1}, i::Any) where T
-    @boundscheck checkbounds(a, i)
-    @inbounds _getindex(typeof(a), parent(a), axes(a), i)
+function Base.getindex(a::AbstractIndicesArray{T,N}, i...) where {T,N}
+    _getindex(typeof(a), parent(a), axes(a), i)
 end
 
-# if a single value is used for indexing than we assume it's linear indexing
+function Base.getindex(a::AbstractIndicesArray{T,1}, i::Any) where T
+    @boundscheck checkbounds(a, i)
+    @inbounds _getindex(typeof(a), parent(a), axes(a), (i,))
+end
+
+# if a single value is used for indexing then we assume it's linear indexing
 # and goes straight to the parent structure.
 function Base.getindex(a::AbstractIndicesArray{T,N}, i::Any) where {T,N}
     @boundscheck checkbounds(parent(a), i)
     @inbounds getindex(parent(a), i)
 end
 
-
-function Base.getindex(a::AbstractIndicesArray{T,N}, i...) where {T,N}
-    _getindex(typeof(a), parent(a), axes(a), i)
-end
 
 #=
 
@@ -130,4 +155,3 @@ function _drop_empty(x::Tuple)
 end
 
 _drop_empty(x::Tuple{}) = ()
-

@@ -35,11 +35,15 @@ function Base.inv(a::AbstractIndicesMatrix)
     similar(typeof(a), inv(parent(a)), (axes(a,2), axes(a, 1)))
 end
 
-for fun in (:cor, :cov)
-    @eval function Statistics.$fun(a::AbstractIndicesMatrix; dims=1, kwargs...)
-        return similar(a,
-                       Statistics.$fun(parent(a); dims=dims, kwargs...),
-                       symmetric_axes(axes(a), dims))
+for f in (:cor, :cov)
+    @eval begin 
+        function Statistics.$f(a::AbstractIndicesMatrix; dims=1, kwargs...)
+            return similar(a, Statistics.$f(parent(a); dims=dims, kwargs...), symmetric_axes(axes(a), dims))
+        end
+
+        function Statistics.$f(a::AbstractIndicesVector)
+            return Statistics.$f(parent(a))
+        end
     end
 end
 
