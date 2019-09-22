@@ -10,3 +10,5 @@ _catch_empty(x::NamedTuple) = x
 _catch_empty(::Tuple{}) = nothing
 _catch_empty(::NamedTuple{(),Tuple{}}) = nothing
 
+maybetail(::Tuple{}) = ()
+maybetail(t::Tuple) = tail(t)

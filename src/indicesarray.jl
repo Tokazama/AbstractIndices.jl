@@ -4,27 +4,34 @@
 struct IndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractIndicesArray{T,N,A,D,F}
     parent::D
     axes::A
+
 end
 
-function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:AbstractVector,N}}) where {T,N}
+
+function IndicesArray(x::AbstractArray{T,N}, axs::Vararg{Any}) where {T,N}
+    IndicesArray(x, Tuple(axs))
+end
+
+function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}=axes(x)) where {T,N}
+    IndicesArray{T,N}(x,  axs)
+end
+
+function IndicesArray{T,N}(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}) where {T,N}
     newaxs = map(asindex, axs, axes(x))
+    return IndicesArray{T,N,typeof(newaxs),typeof(x)}(x, newaxs)
+end
+
+function IndicesArray{T,N,A,D}(x::D, axs::A) where {T,N,A,D}
     f = false
-    for i in newaxs
-        if first(i) != i[1]
+    for i in axs
+        if firstindex(i) != 1
             f = true
             break
         end
     end
-    IndicesArray{T,N,typeof(newaxs),typeof(x),f}(x, newaxs)
+    return IndicesArray{T,N,A,D,f}(x, axs)
 end
 
-
-
-IndicesArray(x::AbstractArray, axs::Vararg) = IndicesArray(x, Tuple(axs))
-
-IndicesArray(x::AbstractArray, axs::Tuple) = IndicesArray(x, map(asindex, axs, axes(x)))
-
-IndicesArray(x::AbstractArray) = IndicesArray(x,  axes(x))
 
 const IndicesMatrix{T,Ax1,Ax2,D<:AbstractMatrix{T}} = IndicesArray{T,2,Tuple{Ax1,Ax2},D}
 
@@ -40,6 +47,19 @@ Base.axes(a::IndicesArray) = getproperty(a, :axes)
 
 Base.isempty(a::IndicesArray) = isempty(parent(a))
 
-function Base.similar(::Type{A}, a::AbstractArray, axs=axes(a)) where {A<:IndicesArray}
-    IndicesArray(a, axs)
+function Base.similar(
+    a::IndicesArray{T,N,A,D,F},
+    eltype::Type=T,
+    inds::Tuple{Vararg{Union{<:AbstractIndex,AbstractPosition}}}=axes(a)
+   ) where {T,N,A,D,F}
+
+    return IndicesArray(similar(parent(a), eltype, length.(new_axes)), new_axes)
+end
+
+function similar_type(
+    ::IndicesArray{T,N,A,D},
+    new_axes::Type=A,
+    new_parent::Type=D
+   ) where {T,N,A,D}
+    return IndicesArray{eltype(new_parent),ndims(new_parent),new_axes,new_parent}
 end

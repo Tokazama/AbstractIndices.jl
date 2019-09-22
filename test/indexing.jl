@@ -12,10 +12,9 @@
     ind3 = asindex(r3)
 
     Aindices = IndicesArray(A, r1, r2, r3);
+    Anamed = NamedDimsArray(Aindices, (:a, :b, :c));
 
-    Anamed = NamedDimsArray(Aindices, (:a, :b, :c))
-
-    # TODO ensure ind3 = 1 is out of bounds error
+   # TODO ensure ind3 = 1 is out of bounds error
     @testset "axes(A, [d])" begin
         @test axes(Aindices, 1) == ind1
         @test axes(Aindices, 2) == ind2

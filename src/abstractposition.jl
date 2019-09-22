@@ -16,6 +16,19 @@ function Base.iterate(a::AbstractIndex, state)
 end
 =#
 
+function to_index(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
+    if a == parent(i)
+        return values(i)
+    else
+        # TODO don't know if this is the best outcome but should be rare
+        return to_index(a, values(i))
+    end
+end
+
+to_index(a::AbstractPosition) = values(a)
+
+to_index(a::AbstractVector, i::AbstractPosition) = values(i)
+
 
 """
     isbefore(a, b) -> Bool

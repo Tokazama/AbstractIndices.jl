@@ -24,8 +24,6 @@ Base.length(a::AbstractIndicesArray) = length(parent(a))
 Base.has_offset_axes(::A) where {A<:AbstractIndicesArray} = has_offset_axes(A)
 Base.has_offset_axes(::Type{<:AbstractIndicesArray{T,N,A,D,F}}) where {T,N,A,D,F} = F
 
-Base.similar(::A, args...) where {A<:AbstractIndicesArray} = similar(A, args...)
-
 #= TODO think about what makes sense for setting in indices
 function Base.setindex!(ai::AxisIndex, val::Any, i::Any)
     @boundscheck checkbounds(ai, i)
@@ -33,11 +31,16 @@ function Base.setindex!(ai::AxisIndex, val::Any, i::Any)
 end
 =#
 function Base.dropdims(a::AbstractIndicesArray; dims)
-    return similar(a, dropdims(parent(a); dims=dims), dropaxes(a, dims))
+    p = dropaxes(parent(a); dims=dims)
+    axs = dropaxes(a, dims=dims)
+
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 function Base.permutedims(a::AbstractIndicesArray, perm)
-    return similar(a, dropdims(parent(a); dims=dims), permuteaxes(a, dims))
+    p = permutedims(parent(a); dims=dims)
+    axs = permuteaxes(a, dims)
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 for f in (
@@ -48,29 +51,35 @@ for f in (
 
     # Vector
     @eval function $f(a::AbstractIndicesVector)
-        similar(a, $f(parent(a)), (SingleIndex(a), axes(a, 1)))
+        p = $f(parent(a))
+        axs = (SingleIndex(a), axes(a, 1))
+        return similar_type(a, typeof(axs), typeof(p))(p, axs)
     end
 
     # Vector Double Transpose
     if f !== :permutedims
         @eval begin
             function $f(a::Union{AbstractIndicesAdjoint,AbstractIndicesTranspose})
-                similar(a, $f(parent(a)), (axes(a, 2),))
+                p = $f(parent(a))
+                axs = (axes(a, 2),)
+                return similar_type(a, typeof(axs), typeof(p))(p, axs)
             end
         end
     end
 
     # Matrix
     @eval function $f(a::AbstractIndicesMatrix)
-        similar(a, $f(parent(a)), (axes(a, 2), axes(a, 1)))
+        p = $f(parent(a))
+        axs = (axes(a, 2), axes(a, 1))
+        return similar_type(a, typeof(axs), typeof(p))(p, axs)
     end
 end
 
-Base.zero(a::AbstractIndicesArray) = similar(a, zero(parent(a)), axes(a))
-
-Base.one(a::AbstractIndicesArray) = similar(a, one(parent(a)), axes(a))
-
-Base.copy(a::AbstractIndicesArray) = similar(a, copy(parent(a)), axes(a))
+for f in (:zero, :one, :copy)
+    @eval function Base.$(f)(a::AbstractIndicesArray)
+        similar_type(a)($(f)(parent(a)), axes(a))
+    end
+end
 
 Base.:(==)(a::AbstractIndicesArray, b::AbstractIndicesArray) = parent(a) == parent(b)
 Base.:(==)(a::AbstractArray, b::AbstractIndicesArray) = a == parent(b)
@@ -91,6 +100,8 @@ copyto
 
 reverse
 iterate
+
+promote_shape
 
 reshape
 =#

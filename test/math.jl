@@ -1,7 +1,7 @@
 
 # TODO cov throws weird arrows on the NamedDims + IndicesArray combo
 @testset "math" begin
-   @testset "$f" for f in (cor,)
+   @testset "$f" for f in (cor,cov)
         A = rand(3, 5)
         Aindices = IndicesArray(A, [:one, :two, :three], 2:6)
         Anamed = NamedDimsArray{(:a, :b)}(Aindices)

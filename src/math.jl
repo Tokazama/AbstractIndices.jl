@@ -1,44 +1,81 @@
 # all AbstractIndicesArray
 function Base.:*(a::AbstractIndicesVector, b::AbstractIndicesMatrix)
-    similar(promote_type(typeof(a), typeof(b)), *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+    p = *(parent(a), parent(b))
+    axs = (axes(a, 1), axes(b, 2))
+
+    return similar_type(b, typeof(axs), typeof(p))(p, axs)
 end
+
 function Base.:*(a::AbstractIndicesMatrix, b::AbstractIndicesMatrix)
-    similar(promote_type(typeof(a), typeof(b)), *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+    p = *(parent(a), parent(b))
+    axs = (axes(a, 1), axes(b, 2))
+
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
+
 function Base.:*(a::AbstractIndicesMatrix, b::AbstractIndicesVector)
-    similar(promote_type(typeof(a), typeof(b)), *(parent(a), parent(b)), (axes(a, 1),))
+    p = *(parent(a), parent(b))
+    axs = (axes(a, 1),)
+
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 # one is AbstractIndicesArray
 function Base.:*(a::AbstractVector, b::AbstractIndicesMatrix)
-    similar(typeof(b), *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+    p = *(a, parent(b))
+    axs = (axes(a, 1), axes(b, 2))
+    return similar_type(b, typeof(axs), typeof(p))(p, axs)
 end
+
 function Base.:*(a::AbstractIndicesVector, b::AbstractMatrix)
-    similar(typeof(a), *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+    p = *(parent(a), b)
+    axs = (axes(a, 1), axes(b, 2))
+ 
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 function Base.:*(a::AbstractMatrix, b::AbstractIndicesMatrix)
-    similar(typeof(b), *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+    p = *(a, parent(b))
+    axs = (axes(a, 1), axes(b, 2))
+ 
+    return similar_type(b, typeof(axs), typeof(p))(p, axs)
 end
+
 function Base.:*(a::AbstractIndicesMatrix, b::AbstractMatrix)
-    similar(typeof(a), *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+    p = *(parent(a), b)
+    axs = (axes(a, 1), axes(b, 2))
+ 
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 function Base.:*(a::AbstractMatrix, b::AbstractIndicesVector)
-    similar(typeof(b), *(parent(a), parent(b)), (axes(a, 1),))
+    p = *(a, parent(b))
+    axs = (axes(a, 1), axes(b, 2))
+ 
+    return similar_type(b, typeof(axs), typeof(p))(p, axs)
 end
+
 function Base.:*(a::AbstractIndicesMatrix, b::AbstractVector)
-    similar(typeof(a), *(parent(a), parent(b)), (axes(a, 1),))
+    p = *(parent(a), b)
+    axs = (axes(a, 1),)
+
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 function Base.inv(a::AbstractIndicesMatrix)
-    similar(typeof(a), inv(parent(a)), (axes(a,2), axes(a, 1)))
+    p = inv(parent(a))
+    axs = (axes(a,2), axes(a, 1))
+
+    return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 for f in (:cor, :cov)
     @eval begin 
         function Statistics.$f(a::AbstractIndicesMatrix; dims=1, kwargs...)
-            return similar(a, Statistics.$f(parent(a); dims=dims, kwargs...), symmetric_axes(axes(a), dims))
+            p = Statistics.$f(parent(a); dims=dims, kwargs...)
+            axs = symmetric_axes(axes(a), dims)
+
+            return similar_type(a, typeof(axs), typeof(p))(p, axs)
         end
 
         function Statistics.$f(a::AbstractIndicesVector)
@@ -54,8 +91,15 @@ function symmetric_axes(axs::Tuple{Vararg{Any,2}}, d::Int)
         return (first(axs), first(axs))
     end
 end
-Base.cumsum(a::AbstractIndicesArray; kwargs...) = similar(a, cumsum(parent(a), kwargs...), axes(a))
 
-Base.cumprod(a::AbstractIndicesArray; kwargs...) = similar(a, cumsum(parent(a), kwargs...), axes(a))
+function Base.cumsum(a::AbstractIndicesArray{T,N,A}; kwargs...) where {T,N,A}
+    p = cumsum(parent(a), kwargs...)
+    return similar_type(a, A, typeof(p))(p, axes(a))
+end
+
+function Base.cumprod(a::AbstractIndicesArray{T,N,A}; kwargs...) where {T,N,A}
+    p = cumprod(parent(a), kwargs...)
+    return similar_type(a, A, typeof(p))(p, axes(a))
+end
 
 # TODO do we need to specify cumsum! and cumprod!

@@ -26,7 +26,6 @@ Base.isempty(a::AbstractIndex) = length(a) == 0
 
 Base.lastindex(a::AbstractIndex) = last(keys(a))
 
-
 Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
 Base.eachindex(a::AbstractIndex) = keys(a)
@@ -34,17 +33,90 @@ Base.eachindex(a::AbstractIndex) = keys(a)
 unname(a::AbstractIndex) = a
 
 @inline function Base.:(==)(a::AbstractIndex, b::AbstractIndex)
+    (keys(a) == keys(b)) & (values(a) == values(b))
+end
+
+@inline function Base.isequal(a::AbstractIndex, b::AbstractIndex)
     isequal(keys(a), keys(b)) & isequal(values(a), values(b))
 end
 
-function Base.getindex(a::AbstractIndex, i::Any)
-    @boundscheck checkindex(Bool, a, i)
-    @inbounds to_index(a, i)
+
+###
+### getindex
+###
+
+#function getindex(a::AbstractIndex{K,V}, i::AbstractVector{V}) where {K,V}
+#    @boundscheck if length(i) != length(intersect(values(a), i))
+#        throw(BoundsError(a, i))
+#    end
+#    @inbounds asindex(i, to_index(a, i))
+#end
+
+###
+### to_index
+###
+
+function to_index(a::AbstractIndex{K,V}, i::K) where {K,V}
+    getindex(values(a), _to_index(keys(a), i))
 end
 
-Base.getindex(a::AbstractIndex, i::Colon) = a
+# ketype is not Int so assume user wants to directly go to index
+to_index(a::AbstractIndex{K,V}, i::Int) where {K,V} = getindex(values(a), i)
+
+# keytype is Int so assume user is interfacing to index through the axis
+function to_index(a::AbstractIndex{Int,V}, i::Int) where {K,V}
+    getindex(values(a), findfirst(isequal(i), keys(a)))
+end
+
+to_index(a::AbstractIndex{K,V}, i::CartesianIndex{1}) where{K,V} = getindex(values(a), i)
+
+to_index(a::AbstractIndex{K,V}, inds::TupOrVec{K}) where {K,V} = getindex(values(a), _to_index(keys(a), inds))
+
+to_index(a::AbstractIndex{Int,V}, inds::TupOrVec{Int}) where {V} = getindex(values(a), _to_index(keys(a), inds))
+
+to_index(a::AbstractIndex{K,V}, inds::TupOrVec{Int}) where {K,V} = getindex(values(a), inds)
+
+to_index(a::AbstractIndex{K,V}, inds::Colon) where {K,V} = values(a)
 
 
+
+function _to_index(k::NTuple{N,K}, idx::K) where {N,K}
+    for i in 1:N
+        getfield(k, i) === idx && return i
+    end
+    return 0
+end
+
+_to_index(k::TupOrVec, inds::TupOrVec) = map(i -> _to_index(k, i), inds)
+
+# TODO double check this
+function _to_index(k::AbstractRange, inds::AbstractRange)
+    s = div(step(inds), step(k))
+    if isone(s)
+        _to_index(k, first(inds)):_to_index(k, last(inds))
+    else
+        return _to_index(k, first(inds)):round(Integer, s):_to_index(k, last(inds))
+    end
+end
+
+_to_index(::OneTo{K}, i::K) where {K} = i
+
+function _to_index(k::AbstractRange, inds::AbstractUnitRange)
+    _to_index(k, first(inds)):_to_index(k, last(inds))
+end
+
+_to_index(k::AbstractVector{K}, i::K) where {K} = findfirst(isequal(i), k)
+
+function _to_index(k::AbstractRange{K}, i::K) where {K}
+    round(Integer, (i - first(k)) / step(k) + 1)
+end
+
+to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
+
+
+###
+### Concrete types
+###
 """
     OneToIndex
 
@@ -106,7 +178,6 @@ function getindex(a::OneToIndex{K,<:StepRange}, i::K) where {K}
     end
     return v
 end
-
 
 """
     AxisIndex
@@ -188,17 +259,17 @@ const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
 
 Chooses the most appropriate index type for an keys and index set.
 """
-asindex(keys::TupOrVec, index::TupOrVec) = AxisIndex(keys, index)
+asindex(keys::AbstractVector, index::TupOrVec) = AxisIndex(keys, index)
 
-asindex(keys::TupOrVec, ::OneTo) = OneToIndex(keys)
+asindex(keys::AbstractVector, ::OneTo) = OneToIndex(keys)
 
 asindex(keys::NTuple{N}) where {N} = asindex(keys, OneTo(N))
 
-asindex(keys::NTuple{N,Symbol}, index::AbstractVector) where {N} = LabelIndex(keys, index)
+asindex(keys::NTuple{N,Symbol}, index::AbstractVector) where {N} = AxisIndex(keys, index)
 
 function asindex(keys::NTuple{N,T}, index::AbstractVector) where {N,T}
     if isbitstype(T)
-        LabelIndex(keys, index)
+        StaticKeys(keys)
     else
         asindex([keys...])
     end

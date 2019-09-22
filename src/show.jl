@@ -136,6 +136,7 @@ function show(
         s = [sprint(show, parent(parent(m))[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
     else
         # FIXME
+        #s = [sprint(show, parent(m[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
         s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
     end
     rowname = keys(axes(m, 1))
