@@ -5,10 +5,5 @@ function index_checks(axis, index)
     allunique(index) || error("Not all elements in index were unique.")
 end
 
-_catch_empty(x::Tuple) = x
-_catch_empty(x::NamedTuple) = x
-_catch_empty(::Tuple{}) = nothing
-_catch_empty(::NamedTuple{(),Tuple{}}) = nothing
-
 maybetail(::Tuple{}) = ()
 maybetail(t::Tuple) = tail(t)

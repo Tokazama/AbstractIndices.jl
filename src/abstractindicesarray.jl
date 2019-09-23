@@ -2,7 +2,7 @@
     AbstractIndicesArray
 
 """
-abstract type AbstractIndicesArray{T,N,A<:Tuple{Vararg{<:AbstractIndex,N}},D<:AbstractArray{T,N},F} <: AbstractArray{T,N} end
+abstract type AbstractIndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractArray{T,N} end
 
 const AbstractIndicesMatrix{T,A,D} = AbstractIndicesArray{T,2,A,D}
 
@@ -13,6 +13,10 @@ const AbstractIndicesMatOrVec{T,A,D} = Union{AbstractIndicesMatrix{T,A,D},Abstra
 const AbstractIndicesAdjoint{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix{T,A,Adjoint{T,D}}
 
 const AbstractIndicesTranspose{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix{T,A,Transpose{T,D}}
+
+HasDimNames(::Type{A}) where {A<:AbstractIndicesArray} = HDNTrue
+
+dimnames(a::AbstractIndicesArray) = map(i -> dimnames(i), axes(a))
 
 Base.size(a::AbstractIndicesArray) = size(parent(a))
 Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), i)
@@ -31,15 +35,16 @@ function Base.setindex!(ai::AxisIndex, val::Any, i::Any)
 end
 =#
 function Base.dropdims(a::AbstractIndicesArray; dims)
-    p = dropaxes(parent(a); dims=dims)
-    axs = dropaxes(a, dims=dims)
+    d = finddims(a, dims=dims)
+    p = dropaxes(parent(a); dims=d)
+    axs = dropaxes(a, dims=d)
 
     return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 
 function Base.permutedims(a::AbstractIndicesArray, perm)
-    p = permutedims(parent(a); dims=dims)
-    axs = permuteaxes(a, dims)
+    p = permutedims(parent(a), perm)
+    axs = permuteaxes(a, perm)
     return similar_type(a, typeof(axs), typeof(p))(p, axs)
 end
 

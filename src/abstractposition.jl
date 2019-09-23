@@ -2,12 +2,20 @@
 abstract type AbstractPosition{K,V,S} end
 
 
-length(::AbstractPosition) = 1
+Base.length(::AbstractPosition) = 1
+
+Base.firstindex(a::AbstractPosition) = keys(a)
+Base.lastindex(a::AbstractPosition) = keys(a)
+
+Base.first(a::AbstractPosition) = values(a)
+Base.last(a::AbstractPosition) = values(a)
 
 keys(p::AbstractPosition) = keys(parent(p))[positionstate(p)]
 values(p::AbstractPosition) = values(parent(p))[positionstate(p)]
 
 isdone(p::AbstractPosition) = length(parent(p)) == positionstate(p)[1]
+
+Base.iterate(p::AbstractPosition) = values(p), nothing
 
 #=
 function Base.iterate(a::AbstractIndex, state)
@@ -30,12 +38,21 @@ to_index(a::AbstractPosition) = values(a)
 to_index(a::AbstractVector, i::AbstractPosition) = values(i)
 
 
+# TODO isbefore
 """
     isbefore(a, b) -> Bool
 
 Test if the index position `a` occurs before `b` n
 """
 function isbefore end
+
+# TODO isafter
+"""
+    isafter(a, b) -> Bool
+
+Test if the index position `a` occurs after `b` n
+"""
+function isafter end
 
 
 """
@@ -51,12 +68,16 @@ mutable struct IndexPosition{K,V,I<:AbstractIndex{K,V}} <: AbstractPosition{K,V,
     _state::CartesianIndex{1}
 end
 
+
+
 function IndexPosition(a::AbstractIndex{K,V}) where {K,V}
     IndexPosition{K,V,typeof(a)}(a, CartesianIndex(1))
 end
 
+dimnames(p::AbstractPosition) = dimnames(p._index)
 Base.parent(p::IndexPosition) = p._index
 positionstate(p::IndexPosition) = p._state
+reduceaxis(a::AbstractIndex) = IndexPosition(a)
 
 function iterate(a::AbstractIndex)
     if isempty(a)
@@ -85,6 +106,8 @@ function Base.iterate(a::I, p::IndexPosition{K,V,I}) where {K,V,I<:AbstractIndex
         return p, p
     end
 end
+
+
 
 function Base.show(io::IO, p::IndexPosition{K,V,I}) where {K,V,I}
     print(io, "IndexPosition ($(positionstate(p)[1])):")

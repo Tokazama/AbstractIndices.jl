@@ -91,15 +91,3 @@ function symmetric_axes(axs::Tuple{Vararg{Any,2}}, d::Int)
         return (first(axs), first(axs))
     end
 end
-
-function Base.cumsum(a::AbstractIndicesArray{T,N,A}; kwargs...) where {T,N,A}
-    p = cumsum(parent(a), kwargs...)
-    return similar_type(a, A, typeof(p))(p, axes(a))
-end
-
-function Base.cumprod(a::AbstractIndicesArray{T,N,A}; kwargs...) where {T,N,A}
-    p = cumprod(parent(a), kwargs...)
-    return similar_type(a, A, typeof(p))(p, axes(a))
-end
-
-# TODO do we need to specify cumsum! and cumprod!

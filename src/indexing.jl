@@ -13,9 +13,9 @@ end
 
 Base.getindex(a::AbstractIndex, i::Colon) = a
 
-function Base.getindex(a::AbstractIndex, i::AbstractVector)
-    index_getindex(keys(a), values(a), i)
-end
+#function Base.getindex(a::AbstractIndex, i::AbstractVector)
+#    index_getindex(keys(a), values(a), i)
+#end
 
 function getindex(a::AbstractIndex{K,V}, i::AbstractVector{Int}) where {K,V}
     @boundscheck checkbounds(values(a), i)
@@ -62,10 +62,29 @@ function Base.to_indices(
     (to_index(first(inds), first(I)), to_indices(A, maybetail(inds), tail(I))...)
 end
 
+function Base.to_indices(
+    A,
+    inds::Tuple{AbstractIndex, Vararg{Any}},
+    I::Tuple{Colon, Vararg{Any}}
+   )
+    Base.@_inline_meta
+    (values(first(inds)), to_indices(A, maybetail(inds), tail(I))...)
+end
+
+function Base.to_indices(
+    A,
+    inds::Tuple{AbstractIndex, Vararg{Any}},
+    I::Tuple{CartesianIndex{1}, Vararg{Any}}
+   )
+    Base.@_inline_meta
+    (to_index(first(inds), first(I)), to_indices(A, maybetail(inds), tail(I))...)
+end
+
 function Base.to_indices(A, I::Tuple{Union{AbstractIndex,AbstractPosition}})
     Base.@_inline_meta
     to_indices(A, axes(A), I)
 end
+
 
 ###
 ### AbstractIndex getindex

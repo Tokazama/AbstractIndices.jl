@@ -30,6 +30,8 @@ Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
 Base.eachindex(a::AbstractIndex) = keys(a)
 
+dimnames(a::AbstractIndex) = :_
+
 unname(a::AbstractIndex) = a
 
 @inline function Base.:(==)(a::AbstractIndex, b::AbstractIndex)
@@ -40,6 +42,7 @@ end
     isequal(keys(a), keys(b)) & isequal(values(a), values(b))
 end
 
+Base.vcat(a::AbstractIndex) = vcat(parent(a))
 
 ###
 ### getindex
@@ -112,7 +115,6 @@ function _to_index(k::AbstractRange{K}, i::K) where {K}
 end
 
 to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
-
 
 ###
 ### Concrete types
@@ -244,10 +246,10 @@ Base.allunique(ni::NamedIndex) = allunique(ni.index)
 # TODO revisit this constructor. seems a bit odd but might be nice to have
 (name::Symbol)(a::AbstractIndex) = NamedIndex{name}(a)
 
-NamedIndex{name}(ni::AbstractVector) where {name} = NamedIndex{name}(asindex(ni))
-function NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V}
-    NamedIndex{name,K,V,typeof(ni),has_offset_axes(ni)}(ni)
-end
+NamedIndex{name}(ni::TupOrVec) where {name} = NamedIndex{name}(asindex(ni))
+NamedIndex{name}(ks::TupOrVec, vs::TupOrVec) where {name} = NamedIndex{name}(asindex(ks, vs))
+
+NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V} = NamedIndex{name,K,V,typeof(ni)}(ni)
 NamedIndex{name}(ni::NamedIndex{name,K,V}) where {name,K,V} = ni
 
 
@@ -281,6 +283,10 @@ asindex(ks::AbstractIndex, vs::AbstractIndex) = asindex(keys(ks), values(vs))
 asindex(ks::AbstractVector) = asindex(ks, axes(ks, 1))
 
 asindex(a::AbstractIndex) = a
+
+asindex(ks::NamedIndex{name}, vs::TupOrVec) where {name} = NamedIndex{name}(keys(ks), vs)
+asindex(ks::NamedIndex{name}, vs::OneTo) where {name} = NamedIndex{name}(asindex(ks.index, vs))
+asindex(ks::NamedIndex{name}, vs::AbstractIndex) where {name} = NamedIndex{name}(asindex(ks.index, vs))
 
 Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
 

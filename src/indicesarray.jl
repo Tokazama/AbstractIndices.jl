@@ -7,13 +7,23 @@ struct IndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},
 
 end
 
+IndicesArray(x::AbstractArray, axs::Vararg{Any}) = IndicesArray(x, Tuple(axs))
 
-function IndicesArray(x::AbstractArray{T,N}, axs::Vararg{Any}) where {T,N}
-    IndicesArray(x, Tuple(axs))
+function IndicesArray(x::AbstractArray{T,N}; kwargs...) where {T,N}
+    if isempty(kwargs)
+        axs = axes(x)
+    else
+        axs = Tuple([NamedIndex{k}(v) for (k,v) in kwargs])
+    end
+    IndicesArray{T,N}(x, axs)
 end
 
-function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}=axes(x)) where {T,N}
+function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}) where {T,N}
     IndicesArray{T,N}(x,  axs)
+end
+
+function IndicesArray(x::AbstractArray{T,D}, names::NTuple{N,Symbol}) where {T,D,N}
+    IndicesArray(x, Tuple(map(i->ifelse(i <= N, NamedIndex{names[i]}(axes(x, i)), axes(x, i)), 1:D)))
 end
 
 function IndicesArray{T,N}(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}) where {T,N}
@@ -32,7 +42,6 @@ function IndicesArray{T,N,A,D}(x::D, axs::A) where {T,N,A,D}
     return IndicesArray{T,N,A,D,f}(x, axs)
 end
 
-
 const IndicesMatrix{T,Ax1,Ax2,D<:AbstractMatrix{T}} = IndicesArray{T,2,Tuple{Ax1,Ax2},D}
 
 const IndicesVector{T,Ax,D<:AbstractVector{T}} = IndicesArray{T,1,Tuple{Ax},D}
@@ -50,7 +59,7 @@ Base.isempty(a::IndicesArray) = isempty(parent(a))
 function Base.similar(
     a::IndicesArray{T,N,A,D,F},
     eltype::Type=T,
-    inds::Tuple{Vararg{Union{<:AbstractIndex,AbstractPosition}}}=axes(a)
+    new_axes::Tuple{Vararg{Union{<:AbstractIndex,AbstractPosition}}}=axes(a)
    ) where {T,N,A,D,F}
 
     return IndicesArray(similar(parent(a), eltype, length.(new_axes)), new_axes)

@@ -21,22 +21,28 @@ export AbstractIndex,
        IndicesArray,
        NamedAxes,
        # methods
-       stepindex,
        asindex,
        # NamedDims
        NamedDimsArray,
        NamedIndicesArray,
+       # General
        dimnames,
-       # General - these combine the two
+       unname,
        filteraxes,
        findaxes,
-       mapaxes
+       finddims,
+       mapaxes,
+       dropaxes,
+       permuteaxes,
+       reduceaxis,
+       reduceaxes
 
 
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
 
+include("interface.jl")
 include("utils.jl")
 include("abstractindex.jl")
 include("abstractposition.jl")
@@ -70,7 +76,6 @@ include("indicesarray.jl")
 include("math.jl")
 include("reduce.jl")
 include("subindices.jl")
-include("interface.jl")
 
 include("show.jl")
 

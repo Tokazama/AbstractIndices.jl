@@ -1,3 +1,7 @@
+# mapfilteraxes
+# filterdims
+ 
+
 """
     HasDimNames
 
@@ -12,8 +16,19 @@ HasDimNames(::Type{T}) where T = HDNFalse
 
 HasDimNames(::Type{T}) where {T<:NamedDimsArray} = HDNTrue
 
-no_dimnames_error(a) = error("Type of $(typeof(a)) has no dimension names.")
+function dimnames_error(a, call)
+    error("$(typeof(a)) does not have dimension names. Calls to `$(call)` require that `dimnames` be implemented.")
+end
 
+"""
+    maybe_dimnames(a, call, maybe)
+
+If `a` has dimension names (i.e. `HasDimNames(a) -> HasDimNames{true}()`) then
+returns `dimnames(a)`. Otherwise returns `maybe(a, call)`.
+"""
+maybe_dimnames(a::A, call, maybe) where {A} = _maybe_dimnames(HasDimNames(A), a, call, maybe)
+_maybe_dimnames(::HasDimNames{true}, a, call, maybe) = dimnames(a)
+_maybe_dimnames(::HasDimNames{false}, a, call, maybe) = maybe(a, call)
 
 """
     dimnames(x) -> Tuple
@@ -43,6 +58,8 @@ unname(x::Tuple) = unname.(x)
 
 """
     HasAxes
+
+Trait that guarantees implementation of `axes` method for a given type.
 """
 struct HasAxes{T} end
 
@@ -53,9 +70,17 @@ HasAxes(x::T) where T = HasAxes(T)
 HasAxes(::Type{T}) where T = HAFalse
 HasAxes(::Type{T}) where T<:AbstractArray = HATrue
 
-function no_axes_error(f, a)
-    error()
-end
+axes_error(a, call) = error("$(typeof(a)) does not have axes. Calls to `$(call)` require that `axes` be implemented.")
+
+"""
+    maybe_axes(a, call, maybe)
+
+If `a` has axes (i.e. `HasAxes(a) -> HasAxes{true}()`) then returns `axes(a)`.
+Otherwise returns `maybe(a, call)`.
+"""
+maybe_axes(a::A, call, maybe) where {A} = _maybe_axes(HasAxes(A), a, call, maybe)
+_maybe_axes(::HasAxes{true}, a, call, maybe) = axes(a)
+_maybe_axes(::HasAxes{false}, a, call, maybe) = maybe(a, call)
 
 """
     findaxes(f, x)
@@ -65,7 +90,7 @@ has named dimensions this is a tuple of symbols. Otherwise, a tuple of integers
 is returned. If all axes return false under the conditions of `f` then
 `nothing` is returned.
 """
-findaxes(f, x) = _catch_empty(_findaxes(f, axes(x), 1))
+findaxes(f, a) = _findaxes(f, maybe_axes(a, findaxes, (x,y) -> ()), 1)
 function _findaxes(f, t::Tuple, cnt::Int)
     if f(first(t))
         return (cnt, _findaxes(f, tail(t), cnt+1)...)
@@ -76,34 +101,30 @@ end
 _findaxes(f, ::Tuple{}, ::Int) = ()
 
 
+# TODO does it make more sense to have return of Tuple{Int} become Int?
 """
-    finddim(img, name) -> Int
+    finddims(a; dims) -> Tuple{Vararg{Int}}
 
 Returns the dimension that has the corresponding `name`. If `name` doesn't
 match any of the dimension names `0` is returned. If `img` doesn't have `names`
 then the default set of names is searched (e.g., dim_1, dim_2, ...).
 """
-@inline finddim(a::A, name::Symbol) where {A} = _finddim(HasDimNames(A), a, name)
-_finddim(::HasDimNames{false}, a, name::Symbol) = nothing
-function _finddim(::HasDimNames{true}, a, name::Symbol)
-   i =  __finddim(dimnames(a), name)
-   if i === 0
-       dim_out_of_bounds(a, name)
-   else
-       return i
-   end
-end
+finddims(a; dims) = finddims(a, dims)
+finddims(a, dims) = maybe_tuple(_finddims(maybe_dimnames(a, finddims, (x,y) -> ntuple(i -> i, ndims(x))), dims))
+_finddims(d::Tuple, name::Symbol) = __finddims(d, name)
+_finddims(d::Tuple, dims::NTuple{N,Symbol}) where {N} = Tuple(map(i -> __finddims(d, i), dims))
+_finddims(d::Tuple, dims::Union{Integer,Tuple{Vararg{Int}}}) = dims  # FIXME should this also check for out of bounds
+_finddims(d::Tuple{Vararg{Any,N}}, dims::Colon) where {N} = ntuple(i -> i, N)::NTuple{N,Int}
+_finddims(::Nothing, dims) = nothing
 
-# FIXME should this checkbounds or just hand that off to next function?
-finddim(a::Any, i::Integer) = 1  
-
-Base.@pure function __finddim(dimnames::NTuple{N,Symbol}, name::Symbol) where {N}
-    for i in 1:N
-        getfield(dimnames, i) === name && return i
+Base.@pure function __finddims(dn::NTuple{D,Symbol}, name::Symbol) where {D}
+    for i in 1:D
+        getfield(dn, i) === name && return i
     end
     return 0
 end
 
+# TODO FIXME error for out of bounds dimension indexing
 dim_out_of_bounds(a, i) = error("Attempt to acces dimension $(i) of $(typeof(a)) ")
 
 """
@@ -134,9 +155,8 @@ mapaxes(f, a) = map(f, axes(a))
 
 Returns tuple of axes that don't include `dims`.
 """
-dropaxes(a::A; dims) where {A} = dropaxes(HasAxes(A), a, finddim(a, dims))
-dropaxes(::HasAxes{true}, a, dims) = _dropaxes(a, dims)
-dropaxes(::HasAxes{false}, a, dims) = no_axes_error(dropaxes, a)
+dropaxes(a; dims) = dropaxes(a, dims)
+dropaxes(a, dims) = _dropaxes(maybe_axes(a, dropaxes, (x, y) -> axes_error(x, y)), finddims(a, dims=dims))
 
 _dropaxes(a, dim::Integer) = _dropdims(a, (Int(dim),))
 function _dropaxes(axs::Tuple{Vararg{<:Any,D}}, dim::NTuple{N,Int}) where {D,N}
@@ -162,59 +182,32 @@ end
 
 Returns axes of `a` in the order of `perms`.
 """
-function permuteaxes(a, perms)
-    Tuple(map(i-getindex(axes(a), i), perms))
-end
+permuteaxes(a, perms) = Tuple(map(i -> getindex(axes(a), i), perms))
 
 
 """
-    permutedimnames
-"""
-permutedimnames(a, perms) = Tuple(map(i->getindex(axes(a), i), perms))
+    reduceaxis(a)
 
-
-# TODO axis point
+Reduces axis `a` to single value. Allows custom index types to have custom
+behavior throughout reduction methods (e.g., sum, prod, etc.)
 """
-axispoint
-"""
-function axispoint end
+reduceaxis(a::AbstractVector{T}) where {T} = one(T)
 
 """
-    reducedim
+    reduceaxes(a; dims)
 """
-function reducedim(a::AbstractIndex, dims, i::Int)
-    if any(i .== dims)
-        return SingleIndex(a)
-    else
-        return a
-    end
-end
+reduceaxes(a; dims) = reduceaxes(a, dims)
+reduceaxes(a, dims) = _reduceaxes(maybe_axes(a, reduceaxes, (x,y)->axes_error(x, y)), finddims(a, dims))
+_reduceaxes(axs::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduceaxes(axs, (dims,))
+_reduceaxes(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D} = Tuple(map(i->ifelse(in(i, dims), reduceaxis(axs[i]), axs[i]), 1:D))
 
-"""
-    reduceaxes
-"""
-reduceaxes(a::AbstractIndicesArray{T,N}; dims::Colon) where {T,N} = ()
-function reduceaxes(a::AbstractIndicesArray{T,N}, dims) where {T,N}
-    Tuple(map(i->reducedim(axes(a, i), dims, i), 1:N))
-end
 
-function findin(r::AbstractRange{<:Integer}, span::AbstractUnitRange{<:Integer})
-    local ifirst
-    local ilast
-    fspan = first(span)
-    lspan = last(span)
-    fr = first(r)
-    lr = last(r)
-    sr = step(r)
-    if sr > 0
-        ifirst = fr >= fspan ? 1 : ceil(Integer,(fspan-fr)/sr)+1
-        ilast = lr <= lspan ? length(r) : length(r) - ceil(Integer,(lr-lspan)/sr)
-    elseif sr < 0
-        ifirst = fr <= lspan ? 1 : ceil(Integer,(lspan-fr)/sr)+1
-        ilast = lr >= fspan ? length(r) : length(r) - ceil(Integer,(lr-fspan)/sr)
-    else
-        ifirst = fr >= fspan ? 1 : length(r)+1
-        ilast = fr <= lspan ? length(r) : 0
-    end
-    r isa AbstractUnitRange ? (ifirst:ilast) : (ifirst:1:ilast)
-end
+maybe_tuple(x::Tuple{Any, Vararg}) = x
+maybe_tuple(x::Tuple{Any}) = first(x)
+maybe_tuple(x::Any) = x
+
+_catch_empty(x::Tuple) = x
+_catch_empty(x::NamedTuple) = x
+_catch_empty(::Tuple{}) = nothing
+_catch_empty(::NamedTuple{(),Tuple{}}) = nothing
+

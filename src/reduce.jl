@@ -1,38 +1,89 @@
 
-for (mod, funs) in ((:Base, (:sum, :prod, :maximum, :minimum, :extrema)),
+
+for (mod, funs) in ((:Base, (:sum, :prod, :maximum, :minimum, :extrema, :all, :any, :findmax)),
                     (:Statistics, (:mean, :std, :var, :median)))
     for f in funs
+        subf = Symbol(:_, f)
         @eval begin
             function $mod.$f(a::AbstractIndicesArray; dims=:, kwargs...)
-                axs = reduceaxes(a, dims)
-                if isempty(axs)
-                    return $mod.$f(parent(a); dims=dims, kwargs...)
-                else
-                    p = $mod.$f(parent(a); dims=dims, kwargs...)
-                    return similar_type(a, typeof(axs), typeof(p))(p, axs)
-                end
+                $subf(a, dims; kwargs...)
             end
+
+            function $subf(a::AbstractIndicesArray, dims::Colon; kwargs...)
+                return $mod.$f(parent(a); dims=:, kwargs...)
+            end
+
+            function $subf(a::AbstractIndicesArray, dims::Any; kwargs...)
+                d = finddims(a, dims=dims)
+                return maybe_indicesarray(a, $mod.$f(parent(a); dims=d, kwargs...), reduceaxes(a, d))
+            end
+
         end
     end
 end
 
-function Base.mapslices(a::AbstractIndicesArray; dims, kswargs...)
-    p = mapslices(f, parent(a); dims=dims, kwargs...)
-    axs = reduceaxes(a, dims)
-
-    similar_type(a, typeof(axs), typeof(p))(p, axs)
+function Base.mapslices(f, a::AbstractIndicesArray; dims=:, kwargs...)
+    _mapslices(f, a, dims; kwargs...)
 end
 
-function Base.mapreduce(a::AbstractIndicesArray; dims, kswargs...)
-    p = mapreduce(f, parent(a); dims=dims, kwargs...)
-    axs = reduceaxes(a, dims)
-
-    similar_type(a, typeof(axs), typeof(p))(p, axs)
+function _mapslices(f, a::AbstractIndicesArray, dims::Colon; kwargs...)
+    return mapslices(f, parent(a); dims=d, kwargs...)
 end
 
-function Base.reduce(a::AbstractIndicesArray; dims, kswargs...)
-    p = reduce(f, parent(a); dims=dims, kwargs...)
-    axs = reduceaxes(a, dims)
+function _mapslices(f, a::AbstractIndicesArray, dims::Any; kwargs...)
+    d = finddims(a, dims=dims)
+    return maybe_indicesarray(a, mapslices(f, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
+end
 
-    similar_type(a, typeof(axs), typeof(p))(p, axs)
+function Base.mapreduce(f, op, a::AbstractIndicesArray; dims=:, kwargs...)
+    _mapreduce(f, op, a, dims; kwargs...)
+end
+
+function _mapreduce(f, op, a::AbstractIndicesArray, dims::Colon; kwargs...)
+    return mapreduce(f, op, parent(a); kwargs...)
+end
+
+function _mapreduce(f, op, a::AbstractIndicesArray, dims::Any; kwargs...)
+    d = finddims(a, dims=dims)
+    return maybe_indicesarray(a, mapreduce(f, op, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
+end
+
+function Base.reduce(a::AbstractIndicesArray; dims=:, kwargs...)
+    d = finddims(a, dims=dims)
+    maybe_indicesarray(a, reduce(f, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
+end
+#=  TODO delete
+function Base.cumsum(a::AbstractIndicesArray{T,N,A}; dims=:, kwargs...) where {T,N,A}
+    d = finddims(a, dims=dims)
+    return maybe_indicesarray(a, cumsum(parent(a), dims=d, kwargs...), reduceaxes(a, dims=d))
+end
+
+function Base.cumprod(a::AbstractIndicesArray{T,N,A}; dims=:, kwargs...) where {T,N,A}
+    d = finddims(a, dims=dims)
+    return maybe_indicesarray(a, cumprod(parent(a), dims=d, kwargs...), reduceaxes(a, dims=d))
+end
+=#
+
+# FIXME Should sort and sort! effect the index labels?
+# TODO cusmum!, cumprod! tests
+# 1 Arg - no default for `dims` keyword
+for (mod, funs) in ((:Base, (:cumsum, :cumsum!, :cumprod, :cumprod!, :sort, :sort!)),)
+    for fun in funs
+        @eval function $mod.$fun(a::AbstractIndicesArray; dims, kwargs...)
+            return maybe_indicesarray(a, $mod.$fun(parent(a); dims=finddims(a, dims), kwargs...), axes(a))
+        end
+
+        # Vector case
+        @eval function $mod.$fun(a::AbstractIndicesVector; kwargs...)
+            return maybe_indicesarray(a, $mod.$fun(parent(a); kwargs...), axes(a))
+        end
+    end
+end
+
+function Base.eachslice(a::AbstractIndicesArray; dims, kwargs...)
+    d = finddims(a, dims)
+    slices = eachslice(parent(a); dims=d, kwargs...)
+    return Base.Generator(slices) do slice
+        return maybe_indicesarray(slice, reduceaxes(a, d))
+    end
 end

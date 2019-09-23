@@ -90,6 +90,7 @@ function show(io::IO, a::Union{AbstractIndicesArray,NamedIndicesArray})
 end
 
 ## compute the ranges to be displayed, plus a total index comprising all ranges.
+## FIXME what's the abstractindex doing here
 function compute_range(v::AbstractIndex, maxn, n)
     if maxn < n
         hn = div(maxn, 2)
@@ -100,6 +101,18 @@ function compute_range(v::AbstractIndex, maxn, n)
     totr = vcat(map(collect, r)...)
     r, totr
 end
+
+function compute_range(v::AbstractPosition, maxn, n)
+    if maxn < n
+        hn = div(maxn, 2)
+        r = (CartesianIndex(1):CartesianIndex(hn), CartesianIndex(n-hn+1):CartesianIndex(n))
+    else
+        r = (CartesianIndex(1):CartesianIndex(n),)
+    end
+    totr = vcat(map(collect, r)...)
+    r, totr
+end
+
 
 leftalign(s, l) = rpad(s, l, " ")
 rightalign(s, l) = lpad(s, l, " ")
