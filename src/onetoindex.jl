@@ -8,8 +8,8 @@ struct OneToIndex{K,V,Ks} <: AbstractIndex{K,V,Ks,OneTo{V}}
     _keys::Ks
 
     function OneToIndex{K,V,Ks}(keys::Ks) where {K,V,Ks}
-        allunique(keys) || error("Not all elements in axis were unique.")
-        typeof(axes(keys, 1)) <: OneTo || error("OneToIndex requires an axis with a OneTo index.")
+        allunique(keys) || error("Not all elements in keys were unique.")
+        typeof(axes(keys, 1)) <: OneTo || error("OneToIndex requires keys with an index OneTo.")
         new{K,V,Ks}(keys)
     end
 end
