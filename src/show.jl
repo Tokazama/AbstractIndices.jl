@@ -23,13 +23,13 @@ function Base.summary(a::AbstractIndicesArray{T,N}) where {T,N}
 end
 
 
-function Base.show(io::IO, ::MIME"text/plain", n::Union{AbstractIndicesArray,NamedIndicesArray})
+function Base.show(io::IO, ::MIME"text/plain", n::AbstractIndicesArray)
    show(io, n)
 end
 
 sprint_colpart(width::Int, s::AbstractVector) = join(map(s->lpad(s, width, " "), s), "  ")
 
-function show(io::IO, v::Union{AbstractIndicesVector,NamedIndicesVector})
+function show(io::IO, v::AbstractIndicesVector)
     println(io, summary(v))
     limit = get(io, :limit, true)
     if size(v) != (0,)
@@ -41,13 +41,13 @@ function show(io::IO, v::Union{AbstractIndicesVector,NamedIndicesVector})
     end
 end
 
-function show(io::IO, ::MIME"text/plain", m::Union{AbstractIndicesMatrix,NamedIndicesMatrix})
+function show(io::IO, ::MIME"text/plain", m::AbstractIndicesMatrix)
     show(io, m)
 end
 
 function show(
     io::IO,
-    m::Union{AbstractIndicesMatrix,NamedIndicesMatrix}
+    m::AbstractIndicesMatrix,
    )
     print(io, summary(m))
     limit = get(io, :limit, true)
@@ -60,7 +60,7 @@ function show(
 end
 
 ## ndims==1 is dispatched below
-function show(io::IO, a::Union{AbstractIndicesArray,NamedIndicesArray})
+function show(io::IO, a::AbstractIndicesArray)
     print(io, summary(a))
     s = size(a)
     limit = get(io, :limit, true)
@@ -125,19 +125,10 @@ function sprint_row(namewidth::Int, name, width::Int, names::Tuple; dots="…", 
     s
 end
 
-#=
-function show(
-    io::IO,
-    m::Union{AbstractIndicesMatrix,NamedIndicesMatrix},
-    row_indices::Tuple{CartesianIndices{1,Tuple{UnitRange{Int64}}},CartesianIndices{1,Tuple{UnitRange{Int64}}}}
-   )
-end
-=#
-
 ## for 2D printing
 function show(
     io::IO,
-    m::Union{AbstractIndicesMatrix,NamedIndicesMatrix},
+    m::AbstractIndicesMatrix,
     maxnrow::Int,
     dimnames_separator::Union{AbstractString,AbstractChar}=" ╲ "
    )
@@ -145,13 +136,9 @@ function show(
     limit = get(io, :limit, true)
     ## rows
     rowrange, totrowrange = compute_range(axes(m, 1), maxnrow, nrow)
-    if m isa NamedIndicesMatrix
-        s = [sprint(show, parent(parent(m))[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
-    else
-        # FIXME
-        #s = [sprint(show, parent(m[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
-        s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
-    end
+    # FIXME
+    #s = [sprint(show, parent(m[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
+    s = [sprint(show, parent(m)[i,j], context=:compact => true) for i=totrowrange, j=axes(m, 2)]
     rowname = keys(axes(m, 1))
     colname = keys(axes(m, 2))
     strlen(x) = length(string(x))
@@ -208,17 +195,13 @@ end
 
 function show(
     io::IO,
-    v::Union{AbstractIndicesVector,NamedIndicesVector},
+    v::AbstractIndicesVector,
     maxnrow::Int
    )
     nrow = size(v, 1)
     rownames = values(axes(v,1))
     rowrange, totrowrange = compute_range(axes(v, 1), maxnrow, nrow)
-    if v isa NamedIndicesVector
-        s = [sprint(show, parent(parent(v))[i], context=:compact => true) for i=totrowrange]
-    else
-        s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
-    end
+    s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
     dn = dimnames(v)
     if dn == (:_,)
         dn = ""

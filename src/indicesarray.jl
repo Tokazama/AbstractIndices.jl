@@ -4,7 +4,6 @@
 struct IndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractIndicesArray{T,N,A,D,F}
     parent::D
     axes::A
-
 end
 
 IndicesArray(x::AbstractArray, axs::Vararg{Any}) = IndicesArray(x, Tuple(axs))
@@ -22,6 +21,7 @@ function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}) where 
     IndicesArray{T,N}(x,  axs)
 end
 
+# TODO test if we can add incomplete names (name only some of dimensions)
 function IndicesArray(x::AbstractArray{T,D}, names::NTuple{N,Symbol}) where {T,D,N}
     IndicesArray(x, Tuple(map(i->ifelse(i <= N, NamedIndex{names[i]}(axes(x, i)), axes(x, i)), 1:D)))
 end
@@ -54,8 +54,6 @@ Base.parent(a::IndicesArray) = getproperty(a, :parent)
 
 Base.axes(a::IndicesArray) = getproperty(a, :axes)
 
-Base.isempty(a::IndicesArray) = isempty(parent(a))
-
 function Base.similar(
     a::IndicesArray{T,N,A,D,F},
     eltype::Type=T,
@@ -72,3 +70,16 @@ function similar_type(
    ) where {T,N,A,D}
     return IndicesArray{eltype(new_parent),ndims(new_parent),new_axes,new_parent}
 end
+
+function Base.similar(A::AbstractArray, ::Type{T}, inds::Tuple{AbstractIndex,Vararg{AbstractIndex}}) where T
+    B = similar(A, T, map(length, inds))
+    IndicesArray(B, map(asindex, axes(B), inds))
+end
+
+
+# TODO similar function and datatype
+#function Base.similar(f::Union{Function,DataType}, shape::Tuple{AbstractIndex,Vararg{AbstractIndex}})
+#    IndicesArray(f())
+#    # body
+#end
+

@@ -72,8 +72,9 @@ end
 for f in (:cor, :cov)
     @eval begin 
         function Statistics.$f(a::AbstractIndicesMatrix; dims=1, kwargs...)
-            p = Statistics.$f(parent(a); dims=dims, kwargs...)
-            axs = symmetric_axes(axes(a), dims)
+            d = finddims(a, dims)
+            p = Statistics.$f(parent(a); dims=d, kwargs...)
+            axs = symmetric_axes(axes(a), d)
 
             return similar_type(a, typeof(axs), typeof(p))(p, axs)
         end

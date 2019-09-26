@@ -4,11 +4,13 @@
 An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
 detailed examples describing its behavior.
 """
-abstract type AbstractIndex{K,V} <: AbstractVector{V} end
+abstract type AbstractIndex{K,V<:Integer,Ks,Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
 
 Base.valtype(::Type{<:AbstractIndex{K,V}}) where {K,V} = V
 
 Base.keytype(::Type{<:AbstractIndex{K,V}}) where {K,V} = K
+
+Base.has_offset_axes(a::AbstractIndex) = has_offset_axes(IndexingStyle(a))
 
 Base.length(a::AbstractIndex) = length(values(a))
 
@@ -30,7 +32,7 @@ Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
 Base.eachindex(a::AbstractIndex) = keys(a)
 
-dimnames(a::AbstractIndex) = :_
+dimnames(a::AbstractIndex) = nothing
 
 unname(a::AbstractIndex) = a
 
@@ -42,254 +44,106 @@ end
     isequal(keys(a), keys(b)) & isequal(values(a), values(b))
 end
 
-Base.vcat(a::AbstractIndex) = vcat(parent(a))
+Base.allunique(a::AbstractIndex) = allunique(keys(a))
+
+Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
 
 ###
-### getindex
+###
 ###
 
-#function getindex(a::AbstractIndex{K,V}, i::AbstractVector{V}) where {K,V}
-#    @boundscheck if length(i) != length(intersect(values(a), i))
-#        throw(BoundsError(a, i))
-#    end
-#    @inbounds asindex(i, to_index(a, i))
-#end
+
+###
+### key2ind - necessary for reverse indexing
+###
+key2ind(k::AbstractRange{K}, i::K) where {K} = round(Integer, (i - first(k)) / step(k) + 1)
+
+key2ind(ks::OrdinalRange{K}, i::K) where K = div((i - first(ks)) + 1, step(ks))
+
+key2ind(ks::AbstractUnitRange{K}, i::K) where K = (i - first(ks)) + 1
+
+@inline function key2ind(ks::NTuple{N,K}, i::K) where {N,K}
+    for idx in 1:N
+        getfield(ks, idx) === i && return idx
+    end
+    return 0
+end
+
+key2ind(ks::AbstractVector{K}, i::K) where {K} = findfirst(isequal(i), ks)
+
+
+key2ind(k::AbstractUnitRange{K}, inds::AbstractUnitRange{K}) where {K} = key2ind(k, first(inds)):key2ind(k, last(inds))
+
+function key2ind(k::AbstractRange{K}, inds::AbstractRange{K}) where {K}
+    s = div(step(inds), step(k))
+    if isone(s)
+        UnitRange(key2ind(k, first(inds)), key2ind(k, last(inds)))
+    else
+        return key2ind(k, first(inds)):round(Integer, s):key2ind(k, last(inds))
+    end
+end
+
+key2ind(::OneTo{K}, i::K) where {K} = i
+
+key2ind(k::TupOrVec{K}, inds::TupOrVec{K}) where {K} = map(i -> key2ind(k, i), inds)
 
 ###
 ### to_index
 ###
 
-function to_index(a::AbstractIndex{K,V}, i::K) where {K,V}
-    getindex(values(a), _to_index(keys(a), i))
-end
+to_index(a::AbstractIndex{K},   i::Colon) where {K}               = values(a)
+to_index(a::AbstractIndex{K},   i::K) where {K}                   = getindex(values(a), key2ind(keys(a), i))
+to_index(a::AbstractIndex{K},   i::Int) where {K}                 = getindex(values(a), i)
+to_index(a::AbstractIndex{Int}, i::Int)                           = getindex(values(a), key2ind(keys(a), i))
+to_index(a::AbstractIndex{K},   i::CartesianIndex{1}) where{K}    = getindex(values(a), i)
 
-# ketype is not Int so assume user wants to directly go to index
-to_index(a::AbstractIndex{K,V}, i::Int) where {K,V} = getindex(values(a), i)
-
-# keytype is Int so assume user is interfacing to index through the axis
-function to_index(a::AbstractIndex{Int,V}, i::Int) where {K,V}
-    getindex(values(a), findfirst(isequal(i), keys(a)))
-end
-
-to_index(a::AbstractIndex{K,V}, i::CartesianIndex{1}) where{K,V} = getindex(values(a), i)
-
-to_index(a::AbstractIndex{K,V}, inds::TupOrVec{K}) where {K,V} = getindex(values(a), _to_index(keys(a), inds))
-
-to_index(a::AbstractIndex{Int,V}, inds::TupOrVec{Int}) where {V} = getindex(values(a), _to_index(keys(a), inds))
-
-to_index(a::AbstractIndex{K,V}, inds::TupOrVec{Int}) where {K,V} = getindex(values(a), inds)
-
-to_index(a::AbstractIndex{K,V}, inds::Colon) where {K,V} = values(a)
+to_index(a::AbstractIndex{K},   i::AbstractVector{K}) where {K}   = getindex(values(a), key2ind(keys(a), i))
+to_index(a::AbstractIndex{K},   i::AbstractVector{Int}) where {K} = getindex(values(a), i)
+to_index(a::AbstractIndex{Int}, i::AbstractVector{Int})           = getindex(values(a), key2ind(keys(a), i))
+to_index(a::AbstractIndex{K},   i::AbstractVector{CartesianIndex{1}}) where {K} = getindex(values(a), inds)
 
 
-
-function _to_index(k::NTuple{N,K}, idx::K) where {N,K}
-    for i in 1:N
-        getfield(k, i) === idx && return i
-    end
-    return 0
-end
-
-_to_index(k::TupOrVec, inds::TupOrVec) = map(i -> _to_index(k, i), inds)
-
-# TODO double check this
-function _to_index(k::AbstractRange, inds::AbstractRange)
-    s = div(step(inds), step(k))
-    if isone(s)
-        _to_index(k, first(inds)):_to_index(k, last(inds))
-    else
-        return _to_index(k, first(inds)):round(Integer, s):_to_index(k, last(inds))
-    end
-end
-
-_to_index(::OneTo{K}, i::K) where {K} = i
-
-function _to_index(k::AbstractRange, inds::AbstractUnitRange)
-    _to_index(k, first(inds)):_to_index(k, last(inds))
-end
-
-_to_index(k::AbstractVector{K}, i::K) where {K} = findfirst(isequal(i), k)
-
-function _to_index(k::AbstractRange{K}, i::K) where {K}
-    round(Integer, (i - first(k)) / step(k) + 1)
-end
-
-to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
-
-###
-### Concrete types
-###
-"""
-    OneToIndex
-
-An `AbstractIndex` subtype that maps directly to a `OneTo` range. Conversion of
-any `AbstractVector
-"""
-struct OneToIndex{K,KV} <: AbstractIndex{K,Int}
-    _keys::KV
-
-    function OneToIndex{K,KV}(keys::KV) where {K,KV}
-        allunique(keys) || error("Not all elements in axis were unique.")
-        typeof(axes(keys, 1)) <: OneTo || error("OneToIndex requires an axis with a OneTo index.")
-        new{K,KV}(keys)
-    end
-end
-
-OneToIndex(keys::OneToIndex) = keys
-OneToIndex(keys::TupOrVec{K}) where {K} = OneToIndex{K,typeof(keys)}(keys)
-Base.allunique(::OneToIndex) = true  # determined at time of construction
-
-length(x::OneToIndex) = length(keys(x))
-
-values(x::OneToIndex) = OneTo(length(x))
-values(x::OneToIndex, i::Int) = i
-keys(x::OneToIndex) = x._keys
-
-function getindex(a::OneToIndex{K,KV}, i::K) where {K,KV<:TupOrVec{K}}
-    @boundscheck checkbounds(a, i)
-    findfirst(isequal(i), keys(a))
-end
-
-function getindex(a::OneToIndex{K,<:AbstractRange}, i::K) where {K}
-    v = searchsortedfirst(keys(a), i)
-    if isnothing(v)
-        throw(BoundsError(a, i))
-    end
-    return v
-end
-
-function getindex(a::OneToIndex{Int,<:OneTo}, i::Int)
-    @boundscheck if i > length(a)
-        throw(BoundsError(a, i))
-    end
-    return i
-end
-
-function getindex(a::OneToIndex{K,<:AbstractUnitRange}, i::K) where {K}
-    v = (i - firstindex(a)) + 1
-    @boundscheck if 1 > v > length(a)
-        throw(BoundsError(a, i))
-    end
-    return v
-end
-
-function getindex(a::OneToIndex{K,<:StepRange}, i::K) where {K}
-    v = div((i - firstindex(a)) + 1, step(keys(a)))
-    @boundscheck if 1 > v > length(a)
-        throw(BoundsError(a, i))
-    end
-    return v
-end
-
-"""
-    AxisIndex
-
-A flexible subtype of `AbstractIndex` that facilitates mapping from a
-collection keys ("axis") to a collection of values ("index").
-"""
-struct AxisIndex{K,V,KV,VV} <: AbstractIndex{K,V}
-    _keys::KV
-    _values::VV
-
-    function AxisIndex{K,V,KV,VV}(keys::KV, values::VV) where {K,V,KV<:TupOrVec,VV<:TupOrVec}
-        index_checks(keys, values)
-        new{K,V,KV,VV}(keys, values)
-    end
-end
-
-function AxisIndex(keys::TupOrVec{K}, values::TupOrVec{V}) where {K,V}
-    AxisIndex{K,V,typeof(keys),typeof(values)}(keys, values)
-end
-
-Base.allunique(::AxisIndex) = true  # determined at time of construction
-AxisIndex(keys::TupOrVec) = AxisIndex(keys, axes(keys, 1))
-
-keys(x::AxisIndex) = x._keys
-values(x::AxisIndex) = x._values
-
-"""
-    StaticKeys
-
-A set of unique keys that are known at compile time for indexing. A
-`StaticKeys` index always refers back to a one based indexing system.
-"""
-struct StaticKeys{Keys,K} <: AbstractIndex{K,Int}
-
-    function StaticKeys{Keys,K}() where {Keys,K}
-        eltype(Keys) <: K || error("eltype of $(Keys) is not match provided keytype $(K)")
-        new{Keys,K}()
-    end
-end
-Base.allunique(::StaticKeys) = true  # determined at time of construction
-StaticKeys(Keys::NTuple{N,K}) where {N,K} = StaticKeys{Keys,K}()
-
-values(sk::StaticKeys) = OneTo(length(sk))
-keys(sk::StaticKeys{Keys}) where {Keys} = Keys
-length(sk::StaticKeys) = length(keys(sk))
-
-"""
-    NamedIndex
-
-A subtype of `AbstractIndex` with a name.
-"""
-struct NamedIndex{name,K,V,I<:AbstractIndex{K,V}} <: AbstractIndex{K,V}
-    index::I
-end
-
-keys(ni::NamedIndex) = keys(ni.index)
-values(ni::NamedIndex) = values(ni.index)
-dimnames(::NamedIndex{name}) where {name} = name
-unname(ni::NamedIndex) = ni.index
-
-Base.allunique(ni::NamedIndex) = allunique(ni.index)
-
-# TODO revisit this constructor. seems a bit odd but might be nice to have
-(name::Symbol)(a::AbstractIndex) = NamedIndex{name}(a)
-
-NamedIndex{name}(ni::TupOrVec) where {name} = NamedIndex{name}(asindex(ni))
-NamedIndex{name}(ks::TupOrVec, vs::TupOrVec) where {name} = NamedIndex{name}(asindex(ks, vs))
-
-NamedIndex{name}(ni::AbstractIndex{K,V}) where {name,K,V} = NamedIndex{name,K,V,typeof(ni)}(ni)
-NamedIndex{name}(ni::NamedIndex{name,K,V}) where {name,K,V} = ni
-
+#to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
 
 const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
 
-"""
+# TODO Is this the best way to handle this?
+#Base.UnitRange(a::AbstractIndex) = UnitRange(values(a))
+#Base.UnitRange{Int}(a::AbstractIndex) = UnitRange(values(a))
 
-    asindex(keys[, values])
+###
+### getindex
+###
 
-Chooses the most appropriate index type for an keys and index set.
-"""
-asindex(keys::AbstractVector, index::TupOrVec) = AxisIndex(keys, index)
-
-asindex(keys::AbstractVector, ::OneTo) = OneToIndex(keys)
-
-asindex(keys::NTuple{N}) where {N} = asindex(keys, OneTo(N))
-
-asindex(keys::NTuple{N,Symbol}, index::AbstractVector) where {N} = AxisIndex(keys, index)
-
-function asindex(keys::NTuple{N,T}, index::AbstractVector) where {N,T}
-    if isbitstype(T)
-        StaticKeys(keys)
-    else
-        asindex([keys...])
-    end
+Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::Int) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
+    getindex(values(a), key2ind(keys(a), i))
 end
 
-# get rid of indirection (try not to nest index
-asindex(ks::AbstractIndex, vs::AbstractIndex) = asindex(keys(ks), values(vs))
+Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::K) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
+    getindex(values(a), key2ind(keys(a), i))
+end
 
-asindex(ks::AbstractVector) = asindex(ks, axes(ks, 1))
+Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::AbstractVector{Int}) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
+    asindex(getindex(keys(a), key2ind(keys(a), i)), a)
+end
 
-asindex(a::AbstractIndex) = a
+Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::AbstractVector{K}) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
+    asindex(getindex(keys(a), key2ind(keys(a), i)), a)
+end
 
-asindex(ks::NamedIndex{name}, vs::TupOrVec) where {name} = NamedIndex{name}(keys(ks), vs)
-asindex(ks::NamedIndex{name}, vs::OneTo) where {name} = NamedIndex{name}(asindex(ks.index, vs))
-asindex(ks::NamedIndex{name}, vs::AbstractIndex) where {name} = NamedIndex{name}(asindex(ks.index, vs))
+# this is necessary to avoid ambiguities in base
+Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::AbstractUnitRange{Int}) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
+    asindex(getindex(keys(a), key2ind(keys(a), i)), a)
+end
 
-Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
+for (I) in (Int,CartesianIndex{1})
+    @eval begin
+        Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::$I) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
+            getindex(values(a), i)
+        end
 
-# TODO Is this the best way to handle this?
-Base.UnitRange(a::AbstractIndex) = UnitRange(values(a))
-Base.UnitRange{Int}(a::AbstractIndex) = UnitRange(values(a))
+        Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::AbstractVector{$I}) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
+            asindex(getindex(keys(a), i), a)
+        end
+    end
+end

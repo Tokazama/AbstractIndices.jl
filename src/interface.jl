@@ -1,7 +1,5 @@
 # mapfilteraxes
 # filterdims
- 
-
 """
     HasDimNames
 
@@ -14,11 +12,12 @@ const HDNFalse = HasDimNames{false}()
 HasDimNames(x::T) where T = HasDimNames(T)
 HasDimNames(::Type{T}) where T = HDNFalse
 
-HasDimNames(::Type{T}) where {T<:NamedDimsArray} = HDNTrue
-
 function dimnames_error(a, call)
     error("$(typeof(a)) does not have dimension names. Calls to `$(call)` require that `dimnames` be implemented.")
 end
+
+hasdimnames(::T) where {T} = hasdimnames(T)
+hasdimnames(::Type{T}) where {T} = HasDimNames{true} === HasDimNames(T)
 
 """
     maybe_dimnames(a, call, maybe)
@@ -33,10 +32,10 @@ _maybe_dimnames(::HasDimNames{false}, a, call, maybe) = maybe(a, call)
 """
     dimnames(x) -> Tuple
 
-
 """
-dimnames(x::Any) = ()
+dimnames(x::Any) = nothing
 dimnames(x::Any, i::Integer) = _dimnames(dimnames(x), i)
+_dimnames(::Nothing, i::Integer) = nothing
 _dimnames(::Tuple{}, i::Integer) = nothing
 _dimnames(t::NTuple{N,Symbol}, i::Integer) where {N} = getfield(t, i)
 
@@ -44,7 +43,6 @@ dimnames(::NT) where {NT<:NamedTuple} = fieldnames(NT)
 dimnames(::NT, i::Integer) where {NT<:NamedTuple} = fieldname(NT, i)
 dimnames(x::Tuple) = merge(dimnames.(x))
 
-dimnames(::Type{<:NamedDimsArray{names}}) where {names} = names
 dimnames(::Type{<:AbstractArray{T, N}}) where {T, N} = ntuple(_->:_, N)
 
 """
@@ -211,3 +209,26 @@ _catch_empty(x::NamedTuple) = x
 _catch_empty(::Tuple{}) = nothing
 _catch_empty(::NamedTuple{(),Tuple{}}) = nothing
 
+
+# TODO ensure no unnecessary allocations
+@inline combine_names(a::A, b::B) where {A,B} = _combine_names(dimnames(a), dimnames(b))
+_combine_names(a::Nothing, b::Symbol) = b
+_combine_names(a::Symbol, b::Nothing) = a
+_combine_names(a::Nothing, b::Nothing) = nothing
+function _combine_names(a::Symbol, b::Symbol)
+    if a === b
+        return a
+    elseif a === :_
+        return b
+    elseif b === :_
+        return a
+    else
+        Symbol(a, :-, b)
+    end
+end
+
+# FIXME combine_keys(::NTuple, )
+combine_keys(a::TupOrVec{K}, b::TupOrVec{K}) where {K} = unique((a..., b...))
+
+# TODO: how to combine keys instead of simply choosing the longest?
+combine_keys(a::AbstractRange, b::AbstractRange) = length(a) > length(b) ? a : b

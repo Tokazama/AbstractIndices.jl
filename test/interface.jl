@@ -11,6 +11,7 @@
     ind2 = asindex(r2)
     ind3 = asindex(r3)
 
+    map(asindex, (r1, r2, r3), axes(A))
     Aindices = IndicesArray(A, r1, r2, r3);
     Anamed = IndicesArray(Aindices, a = r1, b = r2, c = r3);
 

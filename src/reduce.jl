@@ -52,17 +52,6 @@ function Base.reduce(a::AbstractIndicesArray; dims=:, kwargs...)
     d = finddims(a, dims=dims)
     maybe_indicesarray(a, reduce(f, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
 end
-#=  TODO delete
-function Base.cumsum(a::AbstractIndicesArray{T,N,A}; dims=:, kwargs...) where {T,N,A}
-    d = finddims(a, dims=dims)
-    return maybe_indicesarray(a, cumsum(parent(a), dims=d, kwargs...), reduceaxes(a, dims=d))
-end
-
-function Base.cumprod(a::AbstractIndicesArray{T,N,A}; dims=:, kwargs...) where {T,N,A}
-    d = finddims(a, dims=dims)
-    return maybe_indicesarray(a, cumprod(parent(a), dims=d, kwargs...), reduceaxes(a, dims=d))
-end
-=#
 
 # FIXME Should sort and sort! effect the index labels?
 # TODO cusmum!, cumprod! tests

@@ -1,6 +1,7 @@
-
+"""
+    AbstractPosition
+"""
 abstract type AbstractPosition{K,V,S} end
-
 
 Base.length(::AbstractPosition) = 1
 
@@ -55,6 +56,7 @@ Test if the index position `a` occurs after `b` n
 function isafter end
 
 
+
 """
     IndexPosition
 
@@ -67,7 +69,6 @@ mutable struct IndexPosition{K,V,I<:AbstractIndex{K,V}} <: AbstractPosition{K,V,
     _index::I
     _state::CartesianIndex{1}
 end
-
 
 
 function IndexPosition(a::AbstractIndex{K,V}) where {K,V}

@@ -17,9 +17,13 @@ const AbstractIndicesTranspose{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix
 HasDimNames(::Type{A}) where {A<:AbstractIndicesArray} = HDNTrue
 
 dimnames(a::AbstractIndicesArray) = map(i -> dimnames(i), axes(a))
+function unname(a::AbstractIndicesArray{T,N,A,D}) where {T,N,A,D}
+    axs = unname.(axes(a))
+    similar_type(a, typeof(axs), D)(parent(a), axs)
+end
 
 Base.size(a::AbstractIndicesArray) = size(parent(a))
-Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), i)
+Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), finddims(a, i))
 
 Base.isempty(a::AbstractIndicesArray) = isempty(parent(a))
 
@@ -93,7 +97,6 @@ Base.:(==)(a::AbstractIndicesArray, b::AbstractArray) = parent(a) == b
 Base.isequal(a::AbstractIndicesArray, b::AbstractIndicesArray) = isequal(parent(a), parent(b))
 Base.isequal(a::AbstractArray, b::AbstractIndicesArray) = isequal(a, parent(b))
 Base.isequal(a::AbstractIndicesArray, b::AbstractArray) = isequal(parent(a), b)
-
 
 #= TODO
 :sort, :sort!

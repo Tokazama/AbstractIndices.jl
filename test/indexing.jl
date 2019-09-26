@@ -12,7 +12,7 @@
     ind3 = asindex(r3)
 
     Aindices = IndicesArray(A, r1, r2, r3);
-    Anamed = NamedDimsArray(Aindices, (:a, :b, :c));
+    Anamed = IndicesArray(Aindices, (:a, :b, :c));
 
    # TODO ensure ind3 = 1 is out of bounds error
     @testset "axes(A, [d])" begin

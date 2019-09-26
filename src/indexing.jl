@@ -5,51 +5,6 @@
 ### getindex(::AbstractIndex, ::Any)
 ###
 
-# for catching all single element types
-function Base.getindex(a::AbstractIndex, i::Any)
-    @boundscheck checkindex(Bool, a, i)
-    @inbounds to_index(a, i)
-end
-
-Base.getindex(a::AbstractIndex, i::Colon) = a
-
-#function Base.getindex(a::AbstractIndex, i::AbstractVector)
-#    index_getindex(keys(a), values(a), i)
-#end
-
-function getindex(a::AbstractIndex{K,V}, i::AbstractVector{Int}) where {K,V}
-    @boundscheck checkbounds(values(a), i)
-    @inbounds asindex(keys(a)[i], to_index(a, i))
-end
-
-function getindex(a::AbstractIndex{K,Int}, i::AbstractVector{Int}) where {K}
-    @boundscheck checkbounds(values(a), i)
-    @inbounds asindex(keys(a)[i], to_index(a, i))
-end
-# if length(i) != length(intersect(keys(a), i))
-#        throw(BoundsError(a, i))
-#    end
-
-function getindex(a::AbstractIndex{Int,Int}, i::AbstractVector{Int})
-    @boundscheck checkbounds(a, i)
-    @inbounds asindex(i, to_index(a, i))
-end
-
-
-function getindex(a::AbstractIndex{Int,V}, i::AbstractVector{Int}) where {V}
-    @boundscheck if length(i) != length(intersect(keys(a), i))
-        throw(BoundsError(a, i))
-    end
-    @inbounds asindex(i, to_index(a, i))
-end
-
-function getindex(a::AbstractIndex{K,V}, i::AbstractVector{K}) where {K,V}
-    @boundscheck if length(i) != length(intersect(keys(a), i))
-        throw(BoundsError(a, i))
-    end
-    @inbounds asindex(i, to_index(a, i))
-end
-
 ###
 ### to_indices
 ###
