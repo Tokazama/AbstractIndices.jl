@@ -57,15 +57,12 @@
         @test checkbounds(Bool, Aoneto, 2, 2, 2, 2) == false
         @test checkbounds(Bool, Aindices, r1[2], r2[2], r3[2], 2) == false
 
-
-        #=
         @test checkbounds(Bool, Aoneto, 1, 1)  == false
         @test checkbounds(Bool, Aindices, r1[1], r2[1])  == false
-        @test checkbounds(Bool, A, 1, 12) == false
-        @test checkbounds(Bool, A, 5, 12) == false
-        @test checkbounds(Bool, A, 1, 13) == false
-        @test checkbounds(Bool, A, 6, 12) == false
-        =#
+        @test checkbounds(Bool, Aindices, 1, 12) == false
+        @test checkbounds(Bool, Aindices, 5, 12) == false
+        @test checkbounds(Bool, Aindices, 1, 13) == false
+        @test checkbounds(Bool, Aindices, 6, 12) == false
 
         @test checkbounds(Bool, Aoneto, 0, 1, 1) == false
         @test checkbounds(Bool, Aoneto, 1, 0, 1) == false
@@ -81,23 +78,6 @@
 
         @test getindex(Aindices, 1:60) == getindex(Aoneto, 1:60) == getindex(A, 1:60)
         @test checkbounds(Bool, A, 2, 2, 2, 1:1) == true  # extra indices
-
-        #=
-        @test checkbounds(Bool, A, 2, 2, 2, 1:2) == false
-        @test checkbounds(Bool, A, 1:5, 1:4) == false
-        @test checkbounds(Bool, A, 1:5, 1:12) == false
-        @test checkbounds(Bool, A, 1:5, 1:13) == false
-        @test checkbounds(Bool, A, 1:6, 1:12) == false
- 
-        @test checkbounds(Bool, A, 1:61) == false
-
-        @test checkbounds(Bool, A, 0:5, 1:4, 1:3) == false
-        @test checkbounds(Bool, A, 1:5, 0:4, 1:3) == false
-        @test checkbounds(Bool, A, 1:5, 1:4, 0:3) == false
-        @test checkbounds(Bool, A, 1:6, 1:4, 1:3) == false
-        @test checkbounds(Bool, A, 1:5, 1:5, 1:3) == false
-        @test checkbounds(Bool, A, 1:5, 1:4, 1:4) == false
-        =#
     end
 
     @testset "NamedDimsExtra" begin
