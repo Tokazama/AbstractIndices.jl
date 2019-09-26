@@ -1,11 +1,23 @@
-show(io::IO, a::AbstractIndex) = show_index(io, keys(a), values(a))
+show(io::IO, a::AbstractIndex) = show_index(io, dimnames(a), keys(a), values(a))
 
-function show_index(io::IO, ks::AbstractRange, vs::AbstractRange)
+function show_index(io::IO, ::Nothing, ks::AbstractRange, vs::AbstractRange)
     print(io, "Index: $(ks) => $(vs)")
 end
 
-function show_index(io::IO, ks::TupOrVec, vs::TupOrVec)
+function show_index(io::IO, name::Symbol, ks::AbstractRange, vs::AbstractRange)
+    print(io, "Index ($name): $(ks) => $(vs)")
+end
+
+function show_index(io::IO, ::Nothing, ks::TupOrVec, vs::TupOrVec)
     print(io, "Index: \n")
+    for (k,v) in zip(ks,vs)
+        print(io, " $(k) => $(v)")
+        print(io, "\n")
+    end
+end
+
+function show_index(io::IO, name::Symbol, ks::TupOrVec, vs::TupOrVec)
+    print(io, "Index ($(name)): \n")
     for (k,v) in zip(ks,vs)
         print(io, " $(k) => $(v)")
         print(io, "\n")

@@ -107,10 +107,6 @@ to_index(a::AbstractIndex{K},   i::AbstractVector{CartesianIndex{1}}) where {K} 
 
 const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
 
-# TODO Is this the best way to handle this?
-#Base.UnitRange(a::AbstractIndex) = UnitRange(values(a))
-#Base.UnitRange{Int}(a::AbstractIndex) = UnitRange(values(a))
-
 ###
 ### getindex
 ###

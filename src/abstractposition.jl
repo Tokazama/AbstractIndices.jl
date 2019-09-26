@@ -108,8 +108,6 @@ function Base.iterate(a::I, p::IndexPosition{K,V,I}) where {K,V,I<:AbstractIndex
     end
 end
 
-
-
 function Base.show(io::IO, p::IndexPosition{K,V,I}) where {K,V,I}
     print(io, "IndexPosition ($(positionstate(p)[1])):")
     print(io, " $(I.name)($(keys(p)) => $(values(p)))")

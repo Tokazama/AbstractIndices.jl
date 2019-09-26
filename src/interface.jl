@@ -199,6 +199,18 @@ reduceaxes(a, dims) = _reduceaxes(maybe_axes(a, reduceaxes, (x,y)->axes_error(x,
 _reduceaxes(axs::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduceaxes(axs, (dims,))
 _reduceaxes(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D} = Tuple(map(i->ifelse(in(i, dims), reduceaxis(axs[i]), axs[i]), 1:D))
 
+"""
+    namedaxes(a)
+
+Guarantees return of a tuple with named indices.
+"""
+namedaxes(a) = _namedaxes(axes(a), 1)
+_namedaxes(a::Tuple{Vararg{Any,N}}, i::Int) where {N} = (ensure_name(first(a), i), _namedaxes(tail(a), i+1)...)
+_namedaxes(a::Tuple{}, i::Int) = ()
+
+ensure_name(a::A, i::Int) where {A} = _ensure_name(HasDimNames(A), a, i)
+_ensure_name(::HasDimNames{true}, a, i) = asindex(a)
+_ensure_name(::HasDimNames{false}, a, i) = asindex(a, Symbol(:dim_, i))
 
 maybe_tuple(x::Tuple{Any, Vararg}) = x
 maybe_tuple(x::Tuple{Any}) = first(x)

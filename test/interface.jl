@@ -11,7 +11,11 @@
     ind2 = asindex(r2)
     ind3 = asindex(r3)
 
-    map(asindex, (r1, r2, r3), axes(A))
+    named_ind1 = NamedIndex{:a}(ind1)
+    named_ind2 = NamedIndex{:b}(ind2)
+    named_ind3 = NamedIndex{:c}(ind3)
+
+    #map(asindex, (r1, r2, r3), axes(A))
     Aindices = IndicesArray(A, r1, r2, r3);
     Anamed = IndicesArray(Aindices, a = r1, b = r2, c = r3);
 
@@ -53,4 +57,11 @@
         @test reduceaxes(Anamed, (:a, :b)) == (reduceaxis(NamedIndex{:a}(ind1)), reduceaxis(NamedIndex{:b}(ind2)), NamedIndex{:c}(ind3))
     end
 
+    # TODO namedaxes
+    @testset "namedaxes" begin
+        @test namedaxes(Aindices) == (NamedIndex{:dim_1}(ind1),
+                                      NamedIndex{:dim_2}(ind2),
+                                      NamedIndex{:dim_3}(ind3))
+        @test namedaxes(Anamed) == (named_ind1, named_ind2, named_ind3)
+    end
 end

@@ -36,3 +36,8 @@ function Base.similar(ni::NamedIndex{name,K,V}, vs::Type=V) where {name,K,V}
     NamedIndex{name}(similar(ni.index, V))
 end
 Base.allunique(ni::NamedIndex) = allunique(ni.index)
+
+
+Base.:(==)(a::NamedIndex, b::NamedIndex) = unname(a) == unname(b)
+Base.:(==)(a::NamedIndex, b::AbstractVector) = unname(a) == b
+Base.:(==)(a::AbstractVector, b::NamedIndex) = a == unname(b)
