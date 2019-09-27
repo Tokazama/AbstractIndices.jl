@@ -6,15 +6,21 @@ A set of unique keys that are known at compile time for indexing. A
 """
 struct StaticKeys{Keys,N,K} <: AbstractIndex{K,Int,NTuple{N,K},OneTo{Int}}
 
-    function StaticKeys{Keys,N,K}() where {Keys,N,K}
+    function StaticKeys{Keys,N,K}(::CheckedUnique{false}) where {Keys,N,K}
+        allunique(Keys) || error("Not all elements in keys were unique.")
+        eltype(Keys) <: K || error("eltype of $(Keys) does not match provided keytype $(K)")
+        new{Keys,N,K}()
+    end
+
+    function StaticKeys{Keys,N,K}(::CheckedUnique{true}) where {Keys,N,K}
         eltype(Keys) <: K || error("eltype of $(Keys) does not match provided keytype $(K)")
         new{Keys,N,K}()
     end
 end
 
-StaticKeys(Keys::NTuple{N,K}) where {N,K} = StaticKeys{Keys,N,K}()
+StaticKeys(Keys::NTuple{N,K}) where {N,K} = StaticKeys{Keys,N,K}(CheckedUniqueFalse)
 
-IndexingStyle(::Type{<:StaticKeys}) = IndexBaseOne()
+IndexingStyle(::Type{<:StaticKeys}) = IndexBaseOne
 
 values(sk::StaticKeys) = OneTo(length(sk))
 keys(sk::StaticKeys{Keys}) where {Keys} = Keys

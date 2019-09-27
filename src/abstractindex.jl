@@ -32,10 +32,6 @@ Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
 Base.eachindex(a::AbstractIndex) = keys(a)
 
-dimnames(a::AbstractIndex) = nothing
-
-unname(a::AbstractIndex) = a
-
 @inline function Base.:(==)(a::AbstractIndex, b::AbstractIndex)
     (keys(a) == keys(b)) & (values(a) == values(b))
 end
@@ -46,16 +42,22 @@ end
 
 Base.allunique(a::AbstractIndex) = allunique(keys(a))
 
-Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
+Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), IndexingStyle(a))
 
-###
-###
-###
+### haskey
+Base.haskey(a::AbstractIndex{K}, key::K) where {K} = _haskey(keys(a))
+@inline function _haskey(ks::TupOrVec{K}, key::K) where {K}
+    for k_i in ks
+        k_i == key && return true
+    end
+    return false
+end
+_haskey(ks::AbstractRange{K}, key::K) where {K} = key in ks
+function Base.haskey(a::AbstractIndex{K1}, key::K2) where {K1,K2}
+    throw(ArgumentError("invalid key: $key of type $K2"))
+end
 
-
-###
 ### key2ind - necessary for reverse indexing
-###
 key2ind(k::AbstractRange{K}, i::K) where {K} = round(Integer, (i - first(k)) / step(k) + 1)
 
 key2ind(ks::OrdinalRange{K}, i::K) where K = div((i - first(ks)) + 1, step(ks))
@@ -87,10 +89,7 @@ key2ind(::OneTo{K}, i::K) where {K} = i
 
 key2ind(k::TupOrVec{K}, inds::TupOrVec{K}) where {K} = map(i -> key2ind(k, i), inds)
 
-###
 ### to_index
-###
-
 to_index(a::AbstractIndex{K},   i::Colon) where {K}               = values(a)
 to_index(a::AbstractIndex{K},   i::K) where {K}                   = getindex(values(a), key2ind(keys(a), i))
 to_index(a::AbstractIndex{K},   i::Int) where {K}                 = getindex(values(a), i)
@@ -107,10 +106,7 @@ to_index(a::AbstractIndex{K},   i::AbstractVector{CartesianIndex{1}}) where {K} 
 
 const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
 
-###
 ### getindex
-###
-
 Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::Int) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
     getindex(values(a), key2ind(keys(a), i))
 end
@@ -143,3 +139,15 @@ for (I) in (Int,CartesianIndex{1})
         end
     end
 end
+
+"""
+    UniqueChecked
+
+This allows circumventing checking keys for unique keys at construction time if
+this is done elsewhere. If this is used without knowing that all keys provided
+to a structure are unique then unexpected behavior is likely to occur.
+"""
+struct CheckedUnique{T} end
+
+const CheckedUniqueTrue = CheckedUnique{true}()
+const CheckedUniqueFalse = CheckedUnique{false}()
