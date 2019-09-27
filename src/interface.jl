@@ -156,11 +156,11 @@ Returns tuple of axes that don't include `dims`.
 dropaxes(a; dims) = dropaxes(a, dims)
 dropaxes(a, dims) = _dropaxes(maybe_axes(a, dropaxes, (x, y) -> axes_error(x, y)), finddims(a, dims=dims))
 
-_dropaxes(a, dim::Integer) = _dropdims(a, (Int(dim),))
-function _dropaxes(axs::Tuple{Vararg{<:Any,D}}, dim::NTuple{N,Int}) where {D,N}
+_dropaxes(a, dim::Integer) = _dropaxes(a, (Int(dim),))
+function _dropaxes(axs::Tuple{Vararg{<:Any,D}}, dims::NTuple{N,Int}) where {D,N}
     for i in 1:N
-        1 <= dims[i] <= ndims(A) || throw(ArgumentError("dropped dims must be in range 1:ndims(A)"))
-        length(axes(A, dims[i])) == 1 || throw(ArgumentError("dropped dims must all be size 1"))
+        1 <= dims[i] <= D || throw(ArgumentError("dropped dims must be in range 1:ndims(A)"))
+        length(axs[i]) == 1 || throw(ArgumentError("dropped dims must all be size 1"))
         for j = 1:i-1
             dims[j] == dims[i] && throw(ArgumentError("dropped dims must be unique"))
         end
@@ -223,16 +223,12 @@ _catch_empty(::NamedTuple{(),Tuple{}}) = nothing
 
 
 # TODO ensure no unnecessary allocations
-@inline combine_names(a::A, b::B) where {A,B} = _combine_names(dimnames(a), dimnames(b))
-_combine_names(a::Nothing, b::Symbol) = b
-_combine_names(a::Symbol, b::Nothing) = a
-_combine_names(a::Nothing, b::Nothing) = nothing
-function _combine_names(a::Symbol, b::Symbol)
+@inline combine_names(a::A, b::B) where {A,B} = combine_names(dimnames(a), dimnames(b))
+combine_names(a::Nothing, b::Symbol) = b
+combine_names(a::Symbol, b::Nothing) = a
+combine_names(a::Nothing, b::Nothing) = nothing
+function combine_names(a::Symbol, b::Symbol)
     if a === b
-        return a
-    elseif a === :_
-        return b
-    elseif b === :_
         return a
     else
         Symbol(a, :-, b)
@@ -244,3 +240,4 @@ combine_keys(a::TupOrVec{K}, b::TupOrVec{K}) where {K} = unique((a..., b...))
 
 # TODO: how to combine keys instead of simply choosing the longest?
 combine_keys(a::AbstractRange, b::AbstractRange) = length(a) > length(b) ? a : b
+
