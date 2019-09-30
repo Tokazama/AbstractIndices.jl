@@ -1,5 +1,4 @@
 
-
 for (mod, funs) in ((:Base, (:sum, :prod, :maximum, :minimum, :extrema, :all, :any, :findmax)),
                     (:Statistics, (:mean, :std, :var, :median)))
     for f in funs
@@ -27,7 +26,7 @@ function Base.mapslices(f, a::AbstractIndicesArray; dims=:, kwargs...)
 end
 
 function _mapslices(f, a::AbstractIndicesArray, dims::Colon; kwargs...)
-    return mapslices(f, parent(a); dims=d, kwargs...)
+    return mapslices(f, parent(a); dims=finddims(a, dims), kwargs...)
 end
 
 function _mapslices(f, a::AbstractIndicesArray, dims::Any; kwargs...)
@@ -48,7 +47,7 @@ function _mapreduce(f, op, a::AbstractIndicesArray, dims::Any; kwargs...)
     return maybe_indicesarray(a, mapreduce(f, op, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
 end
 
-function Base.reduce(a::AbstractIndicesArray; dims=:, kwargs...)
+function Base.reduce(f, a::AbstractIndicesArray; dims=:, kwargs...)
     d = finddims(a, dims=dims)
     maybe_indicesarray(a, reduce(f, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
 end

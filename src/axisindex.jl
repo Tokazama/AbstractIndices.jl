@@ -4,34 +4,27 @@
 A flexible subtype of `AbstractIndex` that facilitates mapping from a
 collection keys ("axis") to a collection of values ("index").
 """
-struct AxisIndex{K,V,Ks,Vs,IS} <: AbstractIndex{K,V,Ks,Vs}
+struct AxisIndex{K,V,Ks,Vs} <: AbstractIndex{K,V,Ks,Vs}
     _keys::Ks
     _values::Vs
 
-    function AxisIndex{K,V,Ks,Vs,IS}(keys::Ks, values::Vs, ::CheckedUnique{false}) where {K,V,Ks,Vs,IS}
-        allunique(axis) || error("Not all elements in axis were unique.")
-        length(axis) == length(index) || error("axis and index lengths don't match, length(axis) = $(length(axis)) and length(index) = $(length(index))")
-        new{K,V,Ks,Vs,IS}(keys, values)
+    function AxisIndex{K,V,Ks,Vs}(ks::Ks, vs::Vs, ::CheckedUnique{false}) where {K,V,Ks,Vs}
+        allunique(ks) || error("Not all elements in axis were unique.")
+        length(ks) == length(vs) || error("axis and index lengths don't match, length(keys) = $(length(vs)) and length(values) = $(length(ks))")
+        new{K,V,Ks,Vs}(ks, vs)
     end
 
-    function AxisIndex{K,V,Ks,Vs,IS}(keys::Ks, values::Vs, ::CheckedUnique{true}) where {K,V,Ks,Vs,IS}
-        length(axis) == length(index) || error("axis and index lengths don't match, length(axis) = $(length(axis)) and length(index) = $(length(index))")
-        new{K,V,Ks,Vs,IS}(keys, values)
-    end
-end
-
-function AxisIndex(keys::TupOrVec{K}, values::AbstractUnitRange{V}) where {K,V}
-    f = first(values)
-    if isone(f)
-        AxisIndex{K,V,typeof(keys),typeof(values),IndexBaseOne()}(keys, values, CheckedUniqueFalse)
-    else
-        AxisIndex{K,V,typeof(keys),typeof(values),IndexBaseOffset{f}()}(keys, values, CheckedUniqueFalse)
+    function AxisIndex{K,V,Ks,Vs}(ks::Ks, vs::Vs, ::CheckedUnique{true}) where {K,V,Ks,Vs}
+        length(ks) == length(vs) || error("axis and index lengths don't match, length(keys) = $(length(ks)) and length(values) = $(length(vs))")
+        new{K,V,Ks,Vs}(keys, vs)
     end
 end
 
-AxisIndex(keys::TupOrVec) = AxisIndex(keys, axes(keys, 1))
+function AxisIndex(ks::TupOrVec{K}, vs::AbstractUnitRange{V}) where {K,V}
+    AxisIndex{K,V,typeof(ks),typeof(vs)}(ks, vs, CheckedUniqueFalse)
+end
 
-IndexingStyle(::Type{<:AxisIndex{K,V,Ks,Vs,IS}}) where {K,V,Ks,Vs,IS} = IS
+AxisIndex(ks::TupOrVec) = AxisIndex(ks, axes(ks, 1))
 
 keys(x::AxisIndex) = x._keys
 values(x::AxisIndex) = x._values
@@ -42,8 +35,3 @@ end
 
 # determined at time of construction
 Base.allunique(::AxisIndex) = true
-
-function asindex(ks::TupOrVec{K}, s::IndexBaseOffset) where {K}
-    vs = UnitRange(offset(s), offset(s)+length(ks))
-    return AxisIndex{K,eltype(vs),typeof(ks),typeof(vs),s}(ks, vs, CheckedUniqueFalse)
-end

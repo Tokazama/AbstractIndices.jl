@@ -1,16 +1,27 @@
 """
+    maybe_dimnames(a, call, maybe)
+
+If `a` has dimension names (i.e. `HasDimNames(a) -> HasDimNames{true}()`) then
+returns `dimnames(a)`. Otherwise returns `maybe(a, call)`. Useful for throwing
+errors that show the offending method in the stack trace.
+"""
+maybe_dimnames(a::Any, call, maybe) = _maybe_dimnames(dimnames(a), a, call, maybe)
+_maybe_dimnames(name::Symbol, a, call, maybe) = name
+_maybe_dimnames(   ::Nothing, a, call, maybe) = maybe(a, call)
+
+axes_error(a, call) = error("$(typeof(a)) does not have axes. Calls to `$(call)` require that `axes` be implemented.")
+
+"""
     AbstractIndex
 
 An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
 detailed examples describing its behavior.
 """
-abstract type AbstractIndex{K,V<:Integer,Ks,Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
+abstract type AbstractIndex{K,V,Ks,Vs} <: AbstractVector{V} end
 
 Base.valtype(::Type{<:AbstractIndex{K,V}}) where {K,V} = V
 
 Base.keytype(::Type{<:AbstractIndex{K,V}}) where {K,V} = K
-
-Base.has_offset_axes(a::AbstractIndex) = has_offset_axes(IndexingStyle(a))
 
 Base.length(a::AbstractIndex) = length(values(a))
 
@@ -28,116 +39,74 @@ Base.isempty(a::AbstractIndex) = length(a) == 0
 
 Base.lastindex(a::AbstractIndex) = last(keys(a))
 
-Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
+Base.haskey(a::AbstractIndex{K}, key::K) where {K} = key in keys(a)
+Base.haskey(a::AbstractIndex{K1}, key::K2) where {K1,K2} = throw(ArgumentError("invalid key: $key of type $K2"))
 
-Base.eachindex(a::AbstractIndex) = keys(a)
+# TODO don't love these names but seem most appropriate for now
+# ideally we could have valeltype, valtype, keyeltype, and keytype; but this
+# behavior wouldn't be consistent with what we find in base where keytype
+# refers to an element rather than container
+#
+# maybe change keystype => axistype and valuestype => indextype
+keystype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Ks
+valuestype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Vs
 
-@inline function Base.:(==)(a::AbstractIndex, b::AbstractIndex)
-    (keys(a) == keys(b)) & (values(a) == values(b))
-end
 
-@inline function Base.isequal(a::AbstractIndex, b::AbstractIndex)
-    isequal(keys(a), keys(b)) & isequal(values(a), values(b))
-end
+have_same_values(::AbstractIndex{K1,V1,Ks1,Vs1}, ::AbstractIndex{K2,V2,Ks2,Vs2}) where {K1,V1,Ks1,Vs1,K2,V2,Ks2,Vs2} = false
+have_same_values(::AbstractIndex{K1,V,Ks1,OneTo{V}}, ::AbstractIndex{K2,V,Ks2,OneTo{V}}) where {K1,V,Ks1,K2,Ks2} = true
+have_same_values(::AbstractIndex{K,V,Ks,Vs}, ::Vs) where {K,V,Ks,Vs} = true
+have_same_values(::AbstractIndex{K,V,Ks,Vs}, ::Vs2) where {K,V,Ks,Vs,Vs2<:AbstractVector} = true
 
-Base.allunique(a::AbstractIndex) = allunique(keys(a))
+# only `T<:AbstractUnitRange` can broadcast in base. Until we have a good
+# reason to expand on this behavior we should probably just restrict to it.
+can_broadcast(::T) where {T<:AbstractIndex} = can_broadcast(T)
+can_broadcast(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = false
+can_broadcast(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs<:AbstractUnitRange} = true
 
-Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), IndexingStyle(a))
+"""
+    UnitRangeIndex
+"""
+abstract type UnitRangeIndex{K,V,Ks,Vs<:AbstractUnitRange{V}} <: AbstractIndex{K,V,Ks,Vs} end
 
-### haskey
-Base.haskey(a::AbstractIndex{K}, key::K) where {K} = _haskey(keys(a))
-@inline function _haskey(ks::TupOrVec{K}, key::K) where {K}
-    for k_i in ks
-        k_i == key && return true
+Base.allunique(::UnitRangeIndex) = true
+
+
+"""
+    AbstractOneTo
+
+Abstract type for index keys that wrap a simple `OneTo` set of values.
+"""
+abstract type AbstractOneTo{K,V,Ks} <: UnitRangeIndex{K,V,Ks,OneTo{V}} end
+
+values(a::AbstractOneTo{K,V,Ks}) where {K,V,Ks} = OneTo{V}(length(a))
+length(a::AbstractOneTo) = length(keys(a))
+
+
+"""
+    NamedIndex
+
+A subtype of `AbstractIndex` with a name.
+"""
+struct NamedIndex{name,K,V,Ks,Vs,I<:AbstractIndex{K,V,Ks,Vs}} <: AbstractIndex{K,V,Ks,Vs}
+    index::I
+
+    function NamedIndex{name,K,V,Ks,Vs,I}(index::I) where {name,K,V,Ks,Vs,I}
+        new{name,K,V,Ks,Vs,I}(index)
     end
-    return false
-end
-_haskey(ks::AbstractRange{K}, key::K) where {K} = key in ks
-function Base.haskey(a::AbstractIndex{K1}, key::K2) where {K1,K2}
-    throw(ArgumentError("invalid key: $key of type $K2"))
 end
 
-### key2ind - necessary for reverse indexing
-key2ind(k::AbstractRange{K}, i::K) where {K} = round(Integer, (i - first(k)) / step(k) + 1)
+const NamedUnitRangeIndex{name,K,V,Ks,Vs,I<:UnitRangeIndex{K,V,Ks,Vs}} = NamedIndex{name,K,V,Ks,Vs,I}
 
-key2ind(ks::OrdinalRange{K}, i::K) where K = div((i - first(ks)) + 1, step(ks))
+# ≈ Base.DimOrInd
+const DimOrIndex = Union{Integer,AbstractUnitRange,UnitRangeIndex,NamedUnitRangeIndex}
 
-key2ind(ks::AbstractUnitRange{K}, i::K) where K = (i - first(ks)) + 1
 
-@inline function key2ind(ks::NTuple{N,K}, i::K) where {N,K}
-    for idx in 1:N
-        getfield(ks, idx) === i && return idx
-    end
-    return 0
+function Base.CartesianIndices(axs::Tuple{Vararg{DimOrIndex}})
+    CartesianIndices(values.(axs))
 end
 
-key2ind(ks::AbstractVector{K}, i::K) where {K} = findfirst(isequal(i), ks)
-
-
-key2ind(k::AbstractUnitRange{K}, inds::AbstractUnitRange{K}) where {K} = key2ind(k, first(inds)):key2ind(k, last(inds))
-
-function key2ind(k::AbstractRange{K}, inds::AbstractRange{K}) where {K}
-    s = div(step(inds), step(k))
-    if isone(s)
-        UnitRange(key2ind(k, first(inds)), key2ind(k, last(inds)))
-    else
-        return key2ind(k, first(inds)):round(Integer, s):key2ind(k, last(inds))
-    end
-end
-
-key2ind(::OneTo{K}, i::K) where {K} = i
-
-key2ind(k::TupOrVec{K}, inds::TupOrVec{K}) where {K} = map(i -> key2ind(k, i), inds)
-
-### to_index
-to_index(a::AbstractIndex{K},   i::Colon) where {K}               = values(a)
-to_index(a::AbstractIndex{K},   i::K) where {K}                   = getindex(values(a), key2ind(keys(a), i))
-to_index(a::AbstractIndex{K},   i::Int) where {K}                 = getindex(values(a), i)
-to_index(a::AbstractIndex{Int}, i::Int)                           = getindex(values(a), key2ind(keys(a), i))
-to_index(a::AbstractIndex{K},   i::CartesianIndex{1}) where{K}    = getindex(values(a), i)
-
-to_index(a::AbstractIndex{K},   i::AbstractVector{K}) where {K}   = getindex(values(a), key2ind(keys(a), i))
-to_index(a::AbstractIndex{K},   i::AbstractVector{Int}) where {K} = getindex(values(a), i)
-to_index(a::AbstractIndex{Int}, i::AbstractVector{Int})           = getindex(values(a), key2ind(keys(a), i))
-to_index(a::AbstractIndex{K},   i::AbstractVector{CartesianIndex{1}}) where {K} = getindex(values(a), inds)
-
-
-#to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
-
-const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
-
-### getindex
-Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::Int) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
-    getindex(values(a), key2ind(keys(a), i))
-end
-
-Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::K) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-    getindex(values(a), key2ind(keys(a), i))
-end
-
-Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::AbstractVector{Int}) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
-    asindex(getindex(keys(a), key2ind(keys(a), i)), a)
-end
-
-Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::AbstractVector{K}) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-    asindex(getindex(keys(a), key2ind(keys(a), i)), a)
-end
-
-# this is necessary to avoid ambiguities in base
-Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::AbstractUnitRange{Int}) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
-    asindex(getindex(keys(a), key2ind(keys(a), i)), a)
-end
-
-for (I) in (Int,CartesianIndex{1})
-    @eval begin
-        Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::$I) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-            getindex(values(a), i)
-        end
-
-        Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::AbstractVector{$I}) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-            asindex(getindex(keys(a), i), a)
-        end
-    end
+function Base.LinearIndices(axs::Tuple{Vararg{DimOrIndex}})
+    LinearIndices(values.(axs))
 end
 
 """
@@ -150,4 +119,11 @@ to a structure are unique then unexpected behavior is likely to occur.
 struct CheckedUnique{T} end
 
 const CheckedUniqueTrue = CheckedUnique{true}()
+
 const CheckedUniqueFalse = CheckedUnique{false}()
+
+CheckedUnique(x::AbstractVector) = CheckedUniqueFalse
+CheckedUnique(x::Tuple) = CheckedUniqueFalse
+CheckedUnique(x::AbstractRange) = CheckedUniqueTrue
+
+

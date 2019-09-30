@@ -24,7 +24,10 @@ function show_index(io::IO, name::Symbol, ks::TupOrVec, vs::TupOrVec)
     end
 end
 
-Base.print_matrix(io::IO, a::AbstractIndex) = show_index(io, keys(a), values(a))
+function Base.show(io::IO, p::IndexPosition{K,V,I}) where {K,V,I}
+    print(io, "IndexPosition ($(state(p)[1])):")
+    print(io, " $(I.name)($(keys(p)) => $(values(p)))")
+end
 
 ###
 ### Array show
@@ -53,9 +56,7 @@ function show(io::IO, v::AbstractIndicesVector)
     end
 end
 
-function show(io::IO, ::MIME"text/plain", m::AbstractIndicesMatrix)
-    show(io, m)
-end
+show(io::IO, ::MIME"text/plain", m::AbstractIndicesMatrix) = show(io, m)
 
 function show(
     io::IO,
@@ -156,13 +157,9 @@ function show(
     strlen(x) = length(string(x))
     colwidth = max(maximum(map(length, s)), maximum(map(strlen, colname)))
 
-    dn = dimnames(m)
-    if dn == (:_, :_)
-        dns = ""
-        dn = ("", "")
-    else
-        dns = dimnames_separator
-    end
+    # replace nothing
+    dn = map(i -> ifelse(isnothing(i), "", i), dimnames(m))
+    dns = dimnames_separator
     rownamewidth = max(maximum(map(strlen, rowname)), sum(map(length, string.(dn)))+length(dns))
     if limit
         maxncol = div(displaysize(io)[2] - rownamewidth - 4, colwidth+2) # dots, spaces between
@@ -215,7 +212,7 @@ function show(
     rowrange, totrowrange = compute_range(axes(v, 1), maxnrow, nrow)
     s = [sprint(show, parent(v)[i], context=:compact => true) for i=totrowrange]
     dn = dimnames(v)
-    if dn == (:_,)
+    if dn == (nothing,)
         dn = ""
     else
         dn = string(first(dn))

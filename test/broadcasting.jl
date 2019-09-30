@@ -10,8 +10,8 @@
     end
 
     @testset "partially named dims" begin
-        x = IndicesArray(ones(3, 5), (:x, :_))
-        y = IndicesArray(ones(3, 5), (:_, :y))
+        x = IndicesArray(ones(3, 5), (:x, nothing))
+        y = IndicesArray(ones(3, 5), (nothing, :y))
 
         lhs = x .+ y
         rhs = y .+ x

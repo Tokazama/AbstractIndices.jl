@@ -1,4 +1,5 @@
 using AbstractIndices, Test, Statistics
+import Base: OneTo
 
 include("abstractindex.jl")
 include("interface.jl")

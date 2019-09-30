@@ -14,13 +14,13 @@ const AbstractIndicesAdjoint{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix{T
 
 const AbstractIndicesTranspose{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix{T,A,Transpose{T,D}}
 
-HasDimNames(::Type{A}) where {A<:AbstractIndicesArray} = HDNTrue
-
 dimnames(a::AbstractIndicesArray) = map(i -> dimnames(i), axes(a))
 function unname(a::AbstractIndicesArray{T,N,A,D}) where {T,N,A,D}
     axs = unname.(axes(a))
     similar_type(a, typeof(axs), D)(parent(a), axs)
 end
+
+Base.IndexStyle(::Type{<:AbstractIndicesArray{T,N,A,D}}) where {T,N,A,D} = IndexStyle(D)
 
 Base.size(a::AbstractIndicesArray) = size(parent(a))
 Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), finddims(a, i))
@@ -32,12 +32,6 @@ Base.length(a::AbstractIndicesArray) = length(parent(a))
 Base.has_offset_axes(::A) where {A<:AbstractIndicesArray} = has_offset_axes(A)
 Base.has_offset_axes(::Type{<:AbstractIndicesArray{T,N,A,D,F}}) where {T,N,A,D,F} = F
 
-#= TODO think about what makes sense for setting in indices
-function Base.setindex!(ai::AxisIndex, val::Any, i::Any)
-    @boundscheck checkbounds(ai, i)
-    @inbounds setindex!(to_index(ai), val, to_index(ai, i))
-end
-=#
 function Base.dropdims(a::AbstractIndicesArray; dims)
     d = finddims(a, dims=dims)
     p = dropaxes(parent(a); dims=d)
@@ -61,7 +55,7 @@ for f in (
     # Vector
     @eval function $f(a::AbstractIndicesVector)
         p = $f(parent(a))
-        axs = (SingleIndex(a), axes(a, 1))
+        axs = (IndexPosition(a), axes(a, 1))
         return similar_type(a, typeof(axs), typeof(p))(p, axs)
     end
 
@@ -99,17 +93,12 @@ Base.isequal(a::AbstractArray, b::AbstractIndicesArray) = isequal(a, parent(b))
 Base.isequal(a::AbstractIndicesArray, b::AbstractArray) = isequal(parent(a), b)
 
 #= TODO
-:sort, :sort!
-mapslices
+:sort,
+:sort!
 selectdim
-
-broadcasting
 copyto
-
 reverse
 iterate
-
 promote_shape
-
 reshape
 =#

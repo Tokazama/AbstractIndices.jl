@@ -2,7 +2,7 @@ module AbstractIndices
 
 using LinearAlgebra, Statistics
 
-import Base: length, axes, getindex, iterate, checkindex, checkbounds
+import Base: length, axes, getindex, setindex, iterate, checkindex, checkbounds
 
 using Base.Broadcast:
     Broadcasted, BroadcastStyle, DefaultArrayStyle, AbstractArrayStyle, Unknown, combine_axes
@@ -23,7 +23,6 @@ export AbstractIndex,
        NamedIndex,
        AbstractIndicesArray,
        IndicesArray,
-       NamedAxes,
        # methods
        asindex,
        dimnames,
@@ -40,25 +39,45 @@ export AbstractIndex,
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
-include("utils.jl")
-include("indexingstyle.jl")
-include("interface.jl")
+# AbstractIndex
+include("traits.jl")
 include("abstractindex.jl")
+
+include("positions.jl")
+
+include("findkeys.jl")
+include("checkindex.jl")
+include("to_index.jl")
+include("to_indices.jl")
+include("getindex.jl")
+include("setindex.jl")
+include("iterate.jl")
+include("operators.jl")
+
+include("combine.jl")
+include("union.jl")
+include("vcat.jl")
+include("merge.jl")
+
+
 include("onetoindex.jl")
 include("axisindex.jl")
-include("statickeys.jl")
 include("namedindex.jl")
-include("asindex.jl")
-include("abstractposition.jl")
+include("statickeys.jl")
+
 include("abstractindicesarray.jl")
 include("indicesarray.jl")
 
-include("checkbounds.jl")
-include("combine.jl")
+include("similar.jl")
+include("broadcasting.jl")
+include("asindex.jl")
+
+const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
+
+
 include("indexing.jl")
 include("math.jl")
 include("reduce.jl")
-include("broadcasting.jl")
 include("subindices.jl")
 
 include("show.jl")

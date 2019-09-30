@@ -1,11 +1,11 @@
 checkbounds(::Type{Bool}, x::AbstractIndex, i) = checkindex(Bool, x, i)
 
 function checkindex(::Type{Bool}, x::AbstractIndex{K,V,Ks,Vs}, i::K) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-    i in keys(x)
+    haskey(x, i)
 end
 
 function checkindex(::Type{Bool}, x::AbstractIndex{K,V,Ks,Vs}, i::K) where {K<:Real,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-    i in keys(x)
+    haskey(x, i)
 end
 
 function checkindex(::Type{Bool}, x::AbstractIndex{K,V,Ks,Vs}, i::Int) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
@@ -44,5 +44,8 @@ end
 
 checkindex(::Type{Bool}, x::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V} = haskey(x, keys(i))
 
-Base.haskey(x::AbstractIndex{K,V}, i::K) where {K,V} = in(i, keys(x))
+function Base.checkbounds_indices(::Type{Bool}, IA::Tuple{AbstractIndex,Vararg{Any}}, ::Tuple{})
+    Base.@_inline_meta
+    all(x->length(x)==1, IA)
+end
 

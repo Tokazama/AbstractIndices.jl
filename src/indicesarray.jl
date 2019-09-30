@@ -4,43 +4,54 @@
 struct IndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractIndicesArray{T,N,A,D,F}
     parent::D
     axes::A
+
+    function IndicesArray{T,N}(
+        x::AbstractArray{T,N},
+        axs::Tuple{Vararg{<:AbstractVector,N}}
+       ) where {T,N}
+
+        newaxs = Tuple(map(i -> asindex(axs[i], axes(x, i)), 1:N))
+        f = false
+        for i in newaxs
+            if firstindex(i) != 1
+                f = true
+                break
+            end
+        end
+
+        return new{T,N,typeof(newaxs),typeof(x),f}(x, newaxs)
+    end
+
+    function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Union{Symbol,Nothing},N}}) where {T,N}
+        newaxs = Tuple(map(i -> asindex(axes(x, i), getfield(axs, i)), 1:N))
+
+        new{T,N,typeof(newaxs),typeof(x),false}(x, newaxs)
+    end
+
+    function IndicesArray{T,N,A,D}(x::D, axs::A) where {T,N,A,D}
+        f = false
+        for i in axs
+            if firstindex(i) != 1
+                f = true
+                break
+            end
+        end
+
+        return new{T,N,A,D,f}(x, axs)
+    end
 end
 
-IndicesArray(x::AbstractArray, axs::Vararg{Any}) = IndicesArray(x, Tuple(axs))
+IndicesArray(x::AbstractArray, axs::Vararg{Union{Symbol,Nothing,<:AbstractVector}}) = IndicesArray(x, axs)
 
 function IndicesArray(x::AbstractArray{T,N}; kwargs...) where {T,N}
     if isempty(kwargs)
-        axs = axes(x)
+        IndicesArray{T,N}(x, axes(x))
     else
-        axs = Tuple([NamedIndex{k}(v) for (k,v) in kwargs])
+        IndicesArray{T,N}(x, Tuple([asindex(v, k) for (k,v) in kwargs]))
     end
-    IndicesArray{T,N}(x, axs)
 end
+IndicesArray(x::AbstractArray{T,N}, axs::Tuple) where {T,N} = IndicesArray{T,N}(x,  axs)
 
-function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}) where {T,N}
-    IndicesArray{T,N}(x,  axs)
-end
-
-# TODO test if we can add incomplete names (name only some of dimensions)
-function IndicesArray(x::AbstractArray{T,D}, names::NTuple{N,Symbol}) where {T,D,N}
-    IndicesArray(x, Tuple(map(i->ifelse(i <= N, NamedIndex{names[i]}(axes(x, i)), axes(x, i)), 1:D)))
-end
-
-function IndicesArray{T,N}(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Any,N}}) where {T,N}
-    newaxs = map(asindex, axs, axes(x))
-    return IndicesArray{T,N,typeof(newaxs),typeof(x)}(x, newaxs)
-end
-
-function IndicesArray{T,N,A,D}(x::D, axs::A) where {T,N,A,D}
-    f = false
-    for i in axs
-        if firstindex(i) != 1
-            f = true
-            break
-        end
-    end
-    return IndicesArray{T,N,A,D,f}(x, axs)
-end
 
 const IndicesMatrix{T,Ax1,Ax2,D<:AbstractMatrix{T}} = IndicesArray{T,2,Tuple{Ax1,Ax2},D}
 
@@ -53,29 +64,6 @@ const IndicesVecOrMat = Union{IndicesMatrix,IndicesVector}
 Base.parent(a::IndicesArray) = getproperty(a, :parent)
 
 Base.axes(a::IndicesArray) = getproperty(a, :axes)
-
-function Base.similar(
-    a::IndicesArray{T,N,A,D,F},
-    eltype::Type=T,
-    new_axes::Tuple{Vararg{Union{<:AbstractIndex,AbstractPosition}}}=axes(a)
-   ) where {T,N,A,D,F}
-
-    return IndicesArray(similar(parent(a), eltype, length.(new_axes)), new_axes)
-end
-
-function similar_type(
-    ::IndicesArray{T,N,A,D},
-    new_axes::Type=A,
-    new_parent::Type=D
-   ) where {T,N,A,D}
-    return IndicesArray{eltype(new_parent),ndims(new_parent),new_axes,new_parent}
-end
-
-function Base.similar(A::AbstractArray, ::Type{T}, inds::Tuple{AbstractIndex,Vararg{AbstractIndex}}) where T
-    B = similar(A, T, map(length, inds))
-    IndicesArray(B, map(asindex, axes(B), inds))
-end
-
 
 # TODO similar function and datatype
 #function Base.similar(f::Union{Function,DataType}, shape::Tuple{AbstractIndex,Vararg{AbstractIndex}})

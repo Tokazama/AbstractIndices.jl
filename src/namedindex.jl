@@ -1,31 +1,31 @@
-"""
-    NamedIndex
-
-A subtype of `AbstractIndex` with a name.
-"""
-struct NamedIndex{name,K,V,Ks,Vs,I<:AbstractIndex{K,V,Ks,Vs}} <: AbstractIndex{K,V,Ks,Vs}
-    index::I
-
-    function NamedIndex{name,K,V,Ks,Vs,I}(index::I) where {name,K,V,Ks,Vs,I}
-        new{name,K,V,Ks,Vs,I}(index)
-    end
+NamedIndex{name}(ni::TupOrVec) where {name} = NamedIndex{name}(ni, axes(ni, 1))
+NamedIndex{name}(ks::TupOrVec, vs::TupOrVec) where {name} = NamedIndex{name}(asindex(ks, vs))
+function NamedIndex{name}(a::AbstractIndex{K,V,Ks,Vs}) where {name,K,V,Ks,Vs}
+    NamedIndex{name,K,V,Ks,Vs,typeof(a)}(a)
 end
 
-# TODO revisit this constructor. seems a bit odd but might be nice to have
-(name::Symbol)(a::AbstractIndex) = NamedIndex{name}(a)
+NamedIndex(ks::NamedIndex{name,K,V,Ks,Vs,I}, vs::I) where {name,K,V,Ks,Vs,I<:AbstractIndex} = ks
+NamedIndex{name}(ks::NamedIndex{name,K,V,Ks,Vs,I}, vs::I) where {name,K,V,Ks,Vs,I<:AbstractIndex} = ks
+NamedIndex{name}(ks::NamedIndex{name,K,V,Ks,Vs,I}) where {name,K,V,Ks,Vs,I<:AbstractIndex} = ks
 
-NamedIndex{name}(ni::TupOrVec) where {name} = NamedIndex{name}(asindex(ni))
-NamedIndex{name}(ks::TupOrVec, vs::TupOrVec) where {name} = NamedIndex{name}(asindex(ks, vs))
+NamedIndex(ks::NamedIndex{name,K,V ,Ks,OneTo{V },<:AbstractIndex{K,V ,Ks,OneTo{V }}}, vs::OneTo{V }) where {name,K,V,Ks,Vs} = ks
+NamedIndex(ks::NamedIndex{name,K,V1,Ks,OneTo{V1},<:AbstractIndex{K,V1,Ks,OneTo{V1}}}, vs::OneTo{V2}) where {name,K,V1,V2,Ks,Vs} = NamedIndex{name}(unname(ks), vs)
 
-HasDimNames(::Type{<:NamedIndex}) = HDNTrue
+#=
+function NamedIndex(
+    ks::NamedIndex{name,K,V,Ks,Vs,I},
+    vs::AbstractIndex
+   ) where {name,K,V,Ks,Vs,I<:AbstractIndex}
+    return NamedIndex{name}(asindex(unname(ks), vs))
+end
 
 function NamedIndex{name}(ni::AbstractIndex{K,V,Ks,Vs}) where {name,K,V,Ks,Vs}
     NamedIndex{name,K,V,Ks,Vs,typeof(ni)}(ni)
 end
 
 NamedIndex{name}(ni::NamedIndex{name}) where {name} = ni
-
-IndexingStyle(::Type{<:NamedIndex{name,K,V,Ks,Vs,I}}) where {name,K,V,Ks,Vs,I} = IndexingStyle(I)
+=#
+#IndexingStyle(::Type{<:NamedIndex{name,K,V,Ks,Vs,I}}) where {name,K,V,Ks,Vs,I} = IndexingStyle(I)
 
 unname(ni::NamedIndex) = ni.index
 keys(ni::NamedIndex) = keys(unname(ni))
@@ -37,7 +37,3 @@ function Base.similar(ni::NamedIndex{name,K,V}, vs::Type=V) where {name,K,V}
 end
 Base.allunique(ni::NamedIndex) = allunique(ni.index)
 
-
-Base.:(==)(a::NamedIndex, b::NamedIndex) = unname(a) == unname(b)
-Base.:(==)(a::NamedIndex, b::AbstractVector) = unname(a) == b
-Base.:(==)(a::AbstractVector, b::NamedIndex) = a == unname(b)

@@ -18,8 +18,7 @@ function BroadcastIndexStyle(a::BroadcastStyle, b::BroadcastStyle)
 end
 
 function Base.BroadcastStyle(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs}
-    inner_style = typeof(BroadcastStyle(Vs))
-    return BroadcastIndexStyle{inner_style}()
+    return BroadcastIndexStyle{typeof(BroadcastStyle(Vs))}()
 end
 
 
@@ -30,9 +29,7 @@ Base.BroadcastStyle(::BroadcastIndexStyle{A}, b::DefaultArrayStyle) where {A} = 
 Base.BroadcastStyle(a::AbstractArrayStyle{M}, ::BroadcastIndexStyle{B}) where {B,M} = BroadcastIndexStyle(a, B())
 
 function Broadcast.copy(bc::Broadcasted{BroadcastIndexStyle{S}}) where S
-    inner_bc = unwrap_broadcasted(bc)
-    data = copy(inner_bc)
-    return asindex(data)
+    return asindex(copy(unwrap_broadcasted(bc)))
 end
 
 
@@ -117,20 +114,5 @@ function combine(a::StaticKeys{AKeys}, b::StaticKeys{BKeys}) where {AKeys,BKeys}
     StaticKeys(merge(AKeys,BKeys))
 end
 
-combine(a, b) = asindex(combine_keys(keys(a), keys(b)), IndexingStyle(a, b), combine_names(a, b))
+combine(a, b) = asindex(combine_keys(a, b), combine_values(a, b), combine_names(a, b))
 
-#=
-combine(a::OneToIndex, b::OneToIndex) = OneToIndex(union(keys(a), keys(b)))
-
-combine(a::AbstractIndex, b::AbstractIndex) = NamedIndex{combine_names(a, b)}(unname(a), unname(b))
-
-combine(a::NamedIndex, b::AbstractIndex) = NamedIndex{dimnames(a)}(unname(a), b)
-
-function combine(a::AbstractIndex, b::NamedIndex)
-    NamedIndex{dimnames(b)}(a, unname(b))
-end
-
-
-
-#combine(a::AxisIndex, b::AxisIndex) = OneToIndex(union(keys(a), keys(b)))
-=#

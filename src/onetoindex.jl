@@ -1,10 +1,9 @@
 """
     OneToIndex
 
-An `AbstractIndex` subtype that maps directly to a `OneTo` range. Conversion of
-any `AbstractVector
+An `AbstractIndex` subtype that maps directly to a `OneTo` range.
 """
-struct OneToIndex{K,V,Ks} <: AbstractIndex{K,V,Ks,OneTo{V}}
+struct OneToIndex{K,V,Ks} <: AbstractOneTo{K,V,Ks}
     _keys::Ks
 
     function OneToIndex{K,V,Ks}(keys::Ks, ::CheckedUnique{false}) where {K,V,Ks}
@@ -19,28 +18,22 @@ struct OneToIndex{K,V,Ks} <: AbstractIndex{K,V,Ks,OneTo{V}}
     end
 end
 
-OneToIndex(keys::OneToIndex) = keys
-OneToIndex(keys::TupOrVec{K}) where {K} = OneToIndex{K,Int,typeof(keys)}(keys)
+OneToIndex(ks::OneToIndex) = ks
+OneToIndex(ks::TupOrVec{K}) where {K} = OneToIndex{K,Int,typeof(ks)}(ks, CheckedUniqueFalse)
+OneToIndex(ks::TupOrVec{K}, ::OneTo{V}) where {K,V} = OneToIndex{K,V,typeof(ks)}(ks, CheckedUniqueFalse)
+OneToIndex(ks::AbstractRange{K}, ::OneTo{V}) where {K,V} = OneToIndex{K,V,typeof(ks)}(ks, CheckedUniqueTrue)
+OneToIndex(ks::OneToIndex{K,V}, ::OneTo{V}) where {K,V} = ks
+function OneToIndex(ks::OneToIndex{K,V1,Ks}, ::OneTo{V2}) where {K,V1,Ks,V2}
+    OneToIndex{K,V2,Ks}(keys(ks), CheckedUniqueTrue)
+end
 
-length(x::OneToIndex) = length(keys(x))
-values(x::OneToIndex) = OneTo(length(x))
-values(x::OneToIndex, i::Int) = i
 keys(x::OneToIndex) = x._keys
-
-Base.allunique(::OneToIndex) = true  # determined at time of construction
 
 # we know all keys are unique because they are a copy of previously checked keys
 function Base.similar(a::OneToIndex{K,V,Ks}, v::Type=V) where {K,V,Ks}
     OneToIndex{K,v,Ks}(copy(keys(a)), CheckedUniqueTrue)
 end
 
-IndexingStyle(::Type{<:OneToIndex}) = IndexBaseOne
-
-#= TODO: I should be able to delete this now
-function getindex(a::OneToIndex{K,KV}, i::K) where {K,KV<:TupOrVec{K}}
-    @boundscheck checkbounds(a, i)
-    findfirst(isequal(i), keys(a))
+function Base.resize!(a::OneToIndex{K,V,Ks}, i::Integer) where {K,V,Ks<:AbstractVector{K}}
+    resize!(keys(a), i)
 end
-=#
-
-asindex(ks::TupOrVec, ::IndexBaseOne) = OneToIndex(ks)
