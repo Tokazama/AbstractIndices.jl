@@ -70,4 +70,3 @@ Base.axes(a::IndicesArray) = getproperty(a, :axes)
 #    IndicesArray(f())
 #    # body
 #end
-

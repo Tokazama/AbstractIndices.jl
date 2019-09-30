@@ -1,26 +1,4 @@
 
-for (mod, funs) in ((:Base, (:sum, :prod, :maximum, :minimum, :extrema, :all, :any, :findmax)),
-                    (:Statistics, (:mean, :std, :var, :median)))
-    for f in funs
-        subf = Symbol(:_, f)
-        @eval begin
-            function $mod.$f(a::AbstractIndicesArray; dims=:, kwargs...)
-                $subf(a, dims; kwargs...)
-            end
-
-            function $subf(a::AbstractIndicesArray, dims::Colon; kwargs...)
-                return $mod.$f(parent(a); dims=:, kwargs...)
-            end
-
-            function $subf(a::AbstractIndicesArray, dims::Any; kwargs...)
-                d = finddims(a, dims=dims)
-                return maybe_indicesarray(a, $mod.$f(parent(a); dims=d, kwargs...), reduceaxes(a, d))
-            end
-
-        end
-    end
-end
-
 function Base.mapslices(f, a::AbstractIndicesArray; dims=:, kwargs...)
     _mapslices(f, a, dims; kwargs...)
 end

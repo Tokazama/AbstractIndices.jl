@@ -45,6 +45,7 @@ const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 include("traits.jl")
 include("abstractindex.jl")
 
+include("promote_shape.jl")
 include("positions.jl")
 
 include("findkeys.jl")
@@ -54,7 +55,6 @@ include("to_indices.jl")
 include("getindex.jl")
 include("setindex.jl")
 include("iterate.jl")
-include("operators.jl")
 
 include("combine.jl")
 include("union.jl")
@@ -70,6 +70,8 @@ include("statickeys.jl")
 include("abstractindicesarray.jl")
 include("indicesarray.jl")
 
+
+include("operators.jl")
 include("similar.jl")
 include("broadcasting.jl")
 include("asindex.jl")

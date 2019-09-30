@@ -110,3 +110,70 @@
         end
     end
 end
+
+
+@testset "+" begin
+    a = IndicesArray(ones(3), :a)
+
+    @testset "standard case" begin
+        @test +(a) == ones(3)
+        @test dimnames(+(a)) == (:a,)
+
+        @test +(a, a) == 2ones(3)
+        @test dimnames(+(a, a)) == (:a,)
+
+        @test +(a, a, a) == 3ones(3)
+        @test dimnames(+(a, a, a)) == (:a,)
+    end
+
+    @testset "partially named dims" begin
+        x = IndicesArray(ones(3, 5), (:x, nothing))
+        y = IndicesArray(ones(3, 5), (nothing, :y))
+
+        lhs = x + y
+        rhs = y + x
+        @test dimnames(lhs) == (:x, :y) == dimnames(rhs)
+        @test lhs == 2ones(3, 5) == rhs
+    end
+
+    #=
+    @testset "Dimension disagreement" begin
+        @test_throws DimensionMismatch +(
+            IndicesArray(zeros(3, 3, 3, 3), (:a, :b, :c, :d)),
+            IndicesArray(ones(3, 3, 3, 3), (:w, :x, :y, :z))
+        )
+
+        @test_throws DimensionMismatch +(
+            IndicesArray(zeros(3,), :time), IndicesArray(ones(3, 3), :time)
+        )
+    end
+    =#
+
+    @testset "Mixed array types" begin
+        lhs_sum = +(
+            IndicesArray(zeros(3, 3, 3, 3), (:a, :b, :c, :d)),
+            ones(3, 3, 3, 3)
+        )
+        @test lhs_sum == ones(3, 3, 3, 3)
+        @test dimnames(lhs_sum) == (:a, :b, :c, :d)
+
+
+        rhs_sum = +(
+            zeros(3, 3, 3, 3),
+            IndicesArray(ones(3, 3, 3, 3), (:w, :x, :y, :z))
+        )
+        @test rhs_sum == ones(3, 3, 3, 3)
+        @test dimnames(rhs_sum) == (:w, :x, :y, :z)
+
+
+        #=
+        casts = (NamedDimsArray{(:foo, :bar)}, identity)
+        for (T1, T2, T3, T4) in Iterators.product(casts, casts, casts, casts)
+            all(isequal(identity), (T1, T2, T3, T4)) && continue
+            total = T1(ones(3, 6)) + T2(2ones(3, 6)) + T3(3ones(3, 6)) + T4(4ones(3, 6))
+            @test total == 10ones(3, 6)
+            @test names(total) == (:foo, :bar)
+        end
+        =#
+    end
+end

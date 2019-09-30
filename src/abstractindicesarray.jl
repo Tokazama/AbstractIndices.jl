@@ -91,14 +91,6 @@ for f in (:zero, :one, :copy)
     end
 end
 
-Base.:(==)(a::AbstractIndicesArray, b::AbstractIndicesArray) = parent(a) == parent(b)
-Base.:(==)(a::AbstractArray, b::AbstractIndicesArray) = a == parent(b)
-Base.:(==)(a::AbstractIndicesArray, b::AbstractArray) = parent(a) == b
-
-Base.isequal(a::AbstractIndicesArray, b::AbstractIndicesArray) = isequal(parent(a), parent(b))
-Base.isequal(a::AbstractArray, b::AbstractIndicesArray) = isequal(a, parent(b))
-Base.isequal(a::AbstractIndicesArray, b::AbstractArray) = isequal(parent(a), b)
-
 #= TODO
 :sort,
 :sort!
