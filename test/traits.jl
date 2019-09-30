@@ -41,6 +41,9 @@
         @test finddims(Anamed, (1, 2)) == (1, 2)
         @test finddims(Anamed, (:a, :b)) == (1, 2)
         @test finddims(Anamed, :) == (1, 2, 3)
+        @test finddims(Aindices, 1) == 1
+        @test finddims(Aindices, :a) == 0
+        @test finddims(Anamed, :d) == 0
     end
 
     @testset "mapaxes" begin
@@ -50,7 +53,7 @@
     end
 
     @testset "dropaxes" begin
-        @test dropaxes(Anamed, :b) == (named_ind1, named_ind3)
+        @test dropaxes(Anamed, dims=:b) == (named_ind1, named_ind3)
     end
 
     @testset "permuteaxes" begin
@@ -75,5 +78,7 @@
         @test unnamedaxes(Anamed) == axes(Aindices)
         @test hasdimnames(Anamed) == true
         @test hasdimnames(Aindices) == false
+        @test unname((a=1,b=2)) == (1, 2)
+        @test dimnames((a=1, b=2)) == (:a, :b)
     end
 end

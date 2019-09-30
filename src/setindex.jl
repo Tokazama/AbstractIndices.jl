@@ -56,7 +56,7 @@ for (I) in (Int,CartesianIndex{1})
     end
 end
 
-function setindex!(A::AbstractArray{T,N}, val, i::Vararg{AbstractIndex,N}) where {T,N}
+Base.@propagate_inbounds function setindex!(A::AbstractArray{T,N}, val, i::Vararg{AbstractIndex,N}) where {T,N}
     setindex!(A, to_indices(A, i))
 end
 

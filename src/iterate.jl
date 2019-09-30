@@ -3,7 +3,7 @@ Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
 Base.eachindex(a::AbstractIndex) = keys(a)
 
-Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), IndexingStyle(a))
+Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
 
 isdone(p::AbstractPosition) = length(parent(p)) == state(p)[1]
 

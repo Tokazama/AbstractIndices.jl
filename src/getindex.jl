@@ -31,13 +31,13 @@ for (I) in (Int,CartesianIndex{1})
     end
 end
 
-function getindex(A::AbstractArray{T,N}, i::Vararg{AbstractIndex,N}) where {T,N}
+Base.@propagate_inbounds function getindex(A::AbstractArray{T,N}, i::Vararg{AbstractIndex,N}) where {T,N}
     getindex(A, to_indices(A, i))
 end
 
 Base.Slice(x::AbstractIndex) = Base.Slice(values(x))
 
-function Base.getindex(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
+Base.@propagate_inbounds function Base.getindex(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
     @boundscheck checkindex(Bool, a, i)
     return values(i)
 end
