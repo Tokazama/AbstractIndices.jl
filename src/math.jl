@@ -1,73 +1,31 @@
 # all AbstractIndicesArray
-function Base.:*(a::AbstractIndicesVector, b::AbstractIndicesMatrix)
-    p = *(parent(a), parent(b))
-    axs = (axes(a, 1), axes(b, 2))
 
-    return similar_type(b, typeof(axs), typeof(p))(p, axs)
+function _matmul(a::AbstractIndicesArray, p::AbstractArray, axs::Tuple)
+    return similar_type(a,  typeof(axs), typeof(p))(p, axs)
 end
 
-function Base.:*(a::AbstractIndicesMatrix, b::AbstractIndicesMatrix)
-    p = *(parent(a), parent(b))
-    axs = (axes(a, 1), axes(b, 2))
-
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
+function _matmul(a::AbstractIndicesArray, p::Real, axs::Tuple)
+    return p
 end
 
-function Base.:*(a::AbstractIndicesMatrix, b::AbstractIndicesVector)
-    p = *(parent(a), parent(b))
-    axs = (axes(a, 1),)
+Base.:*(a::AbstractIndicesVector, b::AbstractIndicesMatrix) = _matmul(a, *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+Base.:*(a::AbstractIndicesMatrix, b::AbstractIndicesMatrix) = _matmul(a, *(parent(a), parent(b)), (axes(a, 1), axes(b, 2)))
+Base.:*(a::AbstractIndicesMatrix, b::AbstractIndicesVector) = _matmul(a, *(parent(a), parent(b)), (axes(a, 1),           ))
+Base.:*(a::AbstractVector,        b::AbstractIndicesMatrix) = _matmul(b, *(       a , parent(b)), (axes(a, 1), axes(b, 2)))
+Base.:*(a::AbstractIndicesVector, b::AbstractMatrix       ) = _matmul(a, *(parent(a),        b ), (axes(a, 1), axes(b, 2)))
+Base.:*(a::AbstractMatrix,        b::AbstractIndicesMatrix) = _matmul(b, *(       a , parent(b)), (asindex(axes(a, 1)), axes(b, 2)))
+Base.:*(a::AbstractIndicesMatrix, b::AbstractMatrix       ) = _matmul(a, *(parent(a),        b ), (axes(a, 1), asindex(axes(b, 2))))
+Base.:*(a::AbstractMatrix,        b::AbstractIndicesVector) = _matmul(b, *(       a , parent(b)), (axes(a, 1),))
 
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
+Base.:*(a::AbstractIndicesMatrix, b::AbstractVector) = _matmul(a, *(parent(a), b), (axes(a, 1),))
+
+for A in (Adjoint{<:Any, <:AbstractVector}, Transpose{<:Real, <:AbstractVector{<:Real}})
+    @eval function Base.:*(a::$A, b::AbstractIndicesArray{T,1,A,<:AbstractVector{T},F}) where {T,A,F}
+        return *(a, parent(b))
+    end
 end
 
-# one is AbstractIndicesArray
-function Base.:*(a::AbstractVector, b::AbstractIndicesMatrix)
-    p = *(a, parent(b))
-    axs = (axes(a, 1), axes(b, 2))
-    return similar_type(b, typeof(axs), typeof(p))(p, axs)
-end
-
-function Base.:*(a::AbstractIndicesVector, b::AbstractMatrix)
-    p = *(parent(a), b)
-    axs = (axes(a, 1), axes(b, 2))
- 
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
-end
-
-function Base.:*(a::AbstractMatrix, b::AbstractIndicesMatrix)
-    p = *(a, parent(b))
-    axs = (axes(a, 1), axes(b, 2))
- 
-    return similar_type(b, typeof(axs), typeof(p))(p, axs)
-end
-
-function Base.:*(a::AbstractIndicesMatrix, b::AbstractMatrix)
-    p = *(parent(a), b)
-    axs = (axes(a, 1), axes(b, 2))
- 
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
-end
-
-function Base.:*(a::AbstractMatrix, b::AbstractIndicesVector)
-    p = *(a, parent(b))
-    axs = (axes(a, 1), axes(b, 2))
- 
-    return similar_type(b, typeof(axs), typeof(p))(p, axs)
-end
-
-function Base.:*(a::AbstractIndicesMatrix, b::AbstractVector)
-    p = *(parent(a), b)
-    axs = (axes(a, 1),)
-
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
-end
-
-function Base.inv(a::AbstractIndicesMatrix)
-    p = inv(parent(a))
-    axs = (axes(a,2), axes(a, 1))
-
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
-end
+Base.inv(a::AbstractIndicesMatrix) = _matmul(a, inv(parent(a)), (axes(a,2), axes(a, 1)))
 
 for f in (:cor, :cov)
     @eval begin 

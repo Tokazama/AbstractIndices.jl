@@ -40,6 +40,3 @@ function unsafe_values(p::IndexPosition)
     @inbounds getindex(parent(p), state(p))
 end
 
-
-reduceaxis(a::AbstractIndex) = IndexPosition(a)
-

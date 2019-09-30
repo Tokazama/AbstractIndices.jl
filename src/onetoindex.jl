@@ -12,11 +12,20 @@ struct OneToIndex{K,V,Ks} <: AbstractOneTo{K,V,Ks}
         new{K,V,Ks}(keys)
     end
 
-    function OneToIndex{K,V,Ks}(keys::Ks, ::CheckedUnique{true}) where {K,V,Ks}
-        typeof(axes(keys, 1)) <: OneTo || error("OneToIndex requires keys with an index OneTo.")
-        new{K,V,Ks}(keys)
+    function OneToIndex{K,V,Ks}(ks::Ks, ::CheckedUnique{true}) where {K,V,Ks}
+        typeof(axes(ks, 1)) <: OneTo || error("OneToIndex requires keys with an index OneTo.")
+        new{K,V,Ks}(ks)
     end
+
+    OneToIndex{K,V,Tuple{K}}(ks::Tuple{K}) where {K,V} = new{K,V,Tuple{K}}(ks)
 end
+
+const OneIndex{K,V} = OneToIndex{K,V,Tuple{K}}
+
+OneIndex(a::Real) = OneIndex{typeof(a),Int}((a,))
+
+reduceaxis(a::UnitRangeIndex{K,V}) where {K<:Number,V} = OneIndex{K,V}((one(K),))
+
 
 OneToIndex(ks::OneToIndex) = ks
 OneToIndex(ks::TupOrVec{K}) where {K} = OneToIndex{K,Int,typeof(ks)}(ks, CheckedUniqueFalse)

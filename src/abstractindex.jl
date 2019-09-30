@@ -81,7 +81,6 @@ abstract type AbstractOneTo{K,V,Ks} <: UnitRangeIndex{K,V,Ks,OneTo{V}} end
 values(a::AbstractOneTo{K,V,Ks}) where {K,V,Ks} = OneTo{V}(length(a))
 length(a::AbstractOneTo) = length(keys(a))
 
-
 """
     NamedIndex
 
@@ -94,6 +93,7 @@ struct NamedIndex{name,K,V,Ks,Vs,I<:AbstractIndex{K,V,Ks,Vs}} <: AbstractIndex{K
         new{name,K,V,Ks,Vs,I}(index)
     end
 end
+reduceaxis(ni::NamedIndex{name}) where {name} = NamedIndex{name}(unname(ni))
 
 const NamedUnitRangeIndex{name,K,V,Ks,Vs,I<:UnitRangeIndex{K,V,Ks,Vs}} = NamedIndex{name,K,V,Ks,Vs,I}
 
@@ -108,6 +108,7 @@ end
 function Base.LinearIndices(axs::Tuple{Vararg{DimOrIndex}})
     LinearIndices(values.(axs))
 end
+
 
 """
     UniqueChecked
@@ -125,5 +126,3 @@ const CheckedUniqueFalse = CheckedUnique{false}()
 CheckedUnique(x::AbstractVector) = CheckedUniqueFalse
 CheckedUnique(x::Tuple) = CheckedUniqueFalse
 CheckedUnique(x::AbstractRange) = CheckedUniqueTrue
-
-

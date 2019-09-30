@@ -1,3 +1,33 @@
+#=
+similar_type(::SA) where {SA<:StaticArray} = similar_type(SA,eltype(SA))
+similar_type(::Type{SA}) where {SA<:StaticArray} = similar_type(SA,eltype(SA))
+
+similar_type(::SA,::Type{T}) where {SA<:StaticArray,T} = similar_type(SA,T,Size(SA))
+similar_type(::Type{SA},::Type{T}) where {SA<:StaticArray,T} = similar_type(SA,T,Size(SA))
+
+similar_type(::A,s::Size{S}) where {A<:AbstractArray,S} = similar_type(A,eltype(A),s)
+similar_type(::Type{A},s::Size{S}) where {A<:AbstractArray,S} = similar_type(A,eltype(A),s)
+
+similar_type(::A,::Type{T},s::Size{S}) where {A<:AbstractArray,T,S} = similar_type(A,T,s)
+
+# We should be able to deal with SOneTo axes
+similar_type(s::SOneTo) = similar_type(typeof(s))
+similar_type(::Type{SOneTo{n}}) where {n} = similar_type(SOneTo{n}, Int, Size(n))
+
+similar_type(::A, shape::Tuple{SOneTo, Vararg{SOneTo}}) where {A<:AbstractArray} = similar_type(A, eltype(A), shape)
+similar_type(::Type{A}, shape::Tuple{SOneTo, Vararg{SOneTo}}) where {A<:AbstractArray} = similar_type(A, eltype(A), shape)
+
+similar_type(::A,::Type{T}, shape::Tuple{SOneTo, Vararg{SOneTo}}) where {A<:AbstractArray,T} = similar_type(A, T, Size(last.(shape)))
+similar_type(::Type{A},::Type{T}, shape::Tuple{SOneTo, Vararg{SOneTo}}) where {A<:AbstractArray,T} = similar_type(A, T, Size(last.(shape)))
+
+similar_type(::Type{A},::Type{T},s::Size{S}) where {A<:AbstractArray,T,S} = default_similar_type(T,s,length_val(s))
+similar_type(::Type{
+default_similar_type(::Type{T}, s::Size{S}, ::Type{Val{D}}) where {T,S,D} = SArray{Tuple{S...},T,D,prod(s)}
+
+similar_type(::Type{SA},::Type{T},s::Size{S}) where {SA<:Union{MVector,MMatrix,MArray},T,S} = mutable_similar_type(T,s,length_val(s))
+
+mutable_similar_type(::Type{T}, s::Size{S}, ::Type{Val{D}}) where {T,S,D} = MArray{Tuple{S...},T,D,prod(s)}
+=#
 function Base.similar(
     a::IndicesArray{T,N,A,D,F},
     eltype::Type=T,
@@ -7,12 +37,8 @@ function Base.similar(
     return IndicesArray(similar(parent(a), eltype, length.(new_axes)), new_axes)
 end
 
-function similar_type(
-    ::IndicesArray{T,N,A,D},
-    new_axes::Type=A,
-    new_parent::Type=D
-   ) where {T,N,A,D}
-    return IndicesArray{eltype(new_parent),ndims(new_parent),new_axes,new_parent}
+function similar_type(::A, new_axes::Type=axestype(A), new_parent::Type=parenttype(A)) where {A<:IndicesArray}
+    IndicesArray{eltype(new_parent),ndims(new_parent),new_axes,new_parent}
 end
 
 #function Base.similar(A::AbstractArray, ::Type{T}, inds::Tuple{AbstractIndex,Vararg{AbstractIndex}}) where T

@@ -4,15 +4,15 @@
 """
 abstract type AbstractIndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractArray{T,N} end
 
-const AbstractIndicesMatrix{T,A,D} = AbstractIndicesArray{T,2,A,D}
+const AbstractIndicesMatrix{T,A,D,F} = AbstractIndicesArray{T,2,A,D,F}
 
-const AbstractIndicesVector{T,A,D} = AbstractIndicesArray{T,1,A,D}
+const AbstractIndicesVector{T,A,D,F} = AbstractIndicesArray{T,1,A,D,F}
 
-const AbstractIndicesMatOrVec{T,A,D} = Union{AbstractIndicesMatrix{T,A,D},AbstractIndicesVector{T,A,D}}
+const AbstractIndicesMatOrVec{T,A,D,F} = Union{AbstractIndicesMatrix{T,A,D,F},AbstractIndicesVector{T,A,D,F}}
 
-const AbstractIndicesAdjoint{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix{T,A,Adjoint{T,D}}
+const AbstractIndicesAdjoint{T,A,D<:AbstractVector{T},F} = AbstractIndicesMatrix{T,A,Adjoint{T,D},F}
 
-const AbstractIndicesTranspose{T,A,D<:AbstractVector{T}} = AbstractIndicesMatrix{T,A,Transpose{T,D}}
+const AbstractIndicesTranspose{T,A,D<:AbstractVector{T},F} = AbstractIndicesMatrix{T,A,Transpose{T,D},F}
 
 dimnames(a::AbstractIndicesArray) = map(i -> dimnames(i), axes(a))
 function unname(a::AbstractIndicesArray{T,N,A,D}) where {T,N,A,D}
@@ -20,7 +20,14 @@ function unname(a::AbstractIndicesArray{T,N,A,D}) where {T,N,A,D}
     similar_type(a, typeof(axs), D)(parent(a), axs)
 end
 
+
 Base.IndexStyle(::Type{<:AbstractIndicesArray{T,N,A,D}}) where {T,N,A,D} = IndexStyle(D)
+
+parenttype(::A) where {A<:AbstractIndicesArray} = parenttype(A)
+parenttype(::Type{<:AbstractIndicesArray{T,N,A,D}}) where {T,N,A,D} = D
+
+axestype(::A) where {A<:AbstractIndicesArray} = axestype(A)
+axestype(::Type{<:AbstractIndicesArray{T,N,A,D}}) where {T,N,A,D} = A
 
 Base.size(a::AbstractIndicesArray) = size(parent(a))
 Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), finddims(a, i))
@@ -55,7 +62,7 @@ for f in (
     # Vector
     @eval function $f(a::AbstractIndicesVector)
         p = $f(parent(a))
-        axs = (IndexPosition(a), axes(a, 1))
+        axs = (OneIndex(1), axes(a, 1))
         return similar_type(a, typeof(axs), typeof(p))(p, axs)
     end
 
