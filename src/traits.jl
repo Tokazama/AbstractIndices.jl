@@ -27,7 +27,10 @@ end
 
 If `x` has dimension names then returns `true`.
 """
-hasdimnames(x) = !isnothing(dimnames(x))
+hasdimnames(x) = _hasdimnames(dimnames(x))
+_hasdimnames(::Nothing) = false
+_hasdimnames(::Tuple{Vararg{Nothing}}) = false
+_hasdimnames(::Any) = true
 
 
 """
@@ -127,7 +130,6 @@ _dropaxes(a, dim::Integer) = _dropaxes(a, (Int(dim),))
 function _dropaxes(axs::Tuple{Vararg{<:Any,D}}, dims::NTuple{N,Int}) where {D,N}
     for i in 1:N
         1 <= dims[i] <= D || throw(ArgumentError("dropped dims must be in range 1:ndims(A)"))
-        length(axs[i]) == 1 || throw(ArgumentError("dropped dims must all be size 1"))
         for j = 1:i-1
             dims[j] == dims[i] && throw(ArgumentError("dropped dims must be unique"))
         end
@@ -147,7 +149,7 @@ end
 
 Returns axes of `a` in the order of `perms`.
 """
-permuteaxes(a, perms) = Tuple(map(i -> getindex(axes(a), i), perms))
+permuteaxes(a, perms) = Tuple(map(i -> axes(a, finddims(a, i)), perms))
 
 
 """

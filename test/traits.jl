@@ -1,5 +1,5 @@
 
-@testset "interface" begin
+@testset "Traits" begin
     A = rand(5,4,3)
     Aoneto = IndicesArray(A);
 
@@ -43,10 +43,19 @@
         @test finddims(Anamed, :) == (1, 2, 3)
     end
 
-    # TODO mapaxes,
-    # TODO dropaxes,
-    # TODO permuteaxes,
-    # TODO reduceaxis,
+    @testset "mapaxes" begin
+        @test mapaxes(length, Aindices) == (length(named_ind1),
+                                            length(named_ind2),
+                                            length(named_ind3))
+    end
+
+    @testset "dropaxes" begin
+        @test dropaxes(Anamed, :b) == (named_ind1, named_ind3)
+    end
+
+    @testset "permuteaxes" begin
+        @test permuteaxes(Anamed, (:c, :b, :a)) == (named_ind3, named_ind2, named_ind1)
+    end
 
     @testset "reduceaxes" begin
         @test reduceaxes(A, dims=2) == (Base.OneTo(5), 1, Base.OneTo(3))
@@ -63,5 +72,8 @@
                                       NamedIndex{:dim_2}(ind2),
                                       NamedIndex{:dim_3}(ind3))
         @test namedaxes(Anamed) == (named_ind1, named_ind2, named_ind3)
+        @test unnamedaxes(Anamed) == axes(Aindices)
+        @test hasdimnames(Anamed) == true
+        @test hasdimnames(Aindices) == false
     end
 end

@@ -2,7 +2,7 @@
 @testset "AbstractIndex" begin
     float_offset = asindex(2.0:11.0);  # --> should be OneToIndex
     int_offset = asindex(2:11, 1:10) # --> should be AxisIndex
-    symbol_index = StaticKeys((:one, :two, :three))
+    symbol_index = asindex((:one, :two, :three))
 
     @testset "Type interface" begin
         @test @inferred(valtype(float_offset)) == Int
@@ -64,5 +64,13 @@
         ind4 = asindex(r1, ind1)
         @test values(ind4) == OneTo(5)
     end
+
+    #=
+    @testset "asindex" begin
+        @test asindex((:one, :two, :three)) == asindex(symbol_index)
+        ks = NamedIndex{:a}(symbol_index)
+        @test asindex(ks, nothing) = asindex(symbol_index, :a)
+    end
+    =#
 end
 

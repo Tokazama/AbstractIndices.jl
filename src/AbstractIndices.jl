@@ -29,13 +29,15 @@ export AbstractIndex,
        unname,
        filteraxes,
        namedaxes,
+       unnamedaxes,
        findaxes,
        finddims,
        mapaxes,
        dropaxes,
        permuteaxes,
        reduceaxis,
-       reduceaxes
+       reduceaxes,
+       hasdimnames
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
