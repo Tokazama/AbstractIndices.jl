@@ -19,7 +19,12 @@ using StaticRanges:
     ReverseOrdering,
     ContinuousTrait,
     DiscreteTrait,
-    similar_type
+    similar_type,
+    OneToRange,
+    AbstractStepRange,
+    AbstractStepRangeLen,
+    AbstractLinRange,
+    StaticUnitRange
 
 import Base.Broadcast: combine_axes
 
@@ -50,7 +55,6 @@ include("mutate.jl")
 include("setindex.jl")
 
 include("similar.jl")
-include("broadcasting.jl")
 =#
 
 include("abstractindex.jl")
@@ -72,8 +76,7 @@ include("pop.jl")
 include("reduce.jl")
 include("dimensions.jl")
 include("math.jl")
-#include("subindices.jl")
-
+include("broadcasting.jl")
 include("show.jl")
 
 end

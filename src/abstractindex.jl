@@ -82,7 +82,7 @@ end
 for f in (:+, :-)
     @eval begin
         function Base.$(f)(x::AbstractIndex, y::AbstractIndex)
-            if same_type()
+            if same_type(x, y)
                 return similar_type(x)(combine_keys(x, y), +(values(x), values(y)))
             else
                 return $(f)(promote(x, y)...)
@@ -136,16 +136,3 @@ function index_keys_type(::Type{T}) where {T<:AbstractUnitRange}
         return OneToMRange{Int}
     end
 end
-
-combine_keys(x::AbstractIndex, y::AbstractIndex) = _combine_keys(keys(x), keys(y))
-function _combine_keys(x, y)
-    if same_type(x, y)
-        return __combine_keys(x, y)
-    else
-        return _combine_keys(promote(x, y)...)
-    end
-end
-
-# TODO more complete key combination rules
-__combine_keys(x, y) = copy(x)
-

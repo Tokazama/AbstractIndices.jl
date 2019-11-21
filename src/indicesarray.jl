@@ -27,6 +27,12 @@ end
 
 _process_index(a, i, uc, lc) = Index(a, i, uc, lc)
 
+function _process_index(a, i::AbstractIndex, uc, lc)
+    check_index_length(a, i, lc)
+    return i
+end
+
+
 _process_index(a, ::Nothing, uc, lc) = Index(a, uc)
 
 function IndicesArray{T,N,P}(

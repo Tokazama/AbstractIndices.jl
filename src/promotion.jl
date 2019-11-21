@@ -1,5 +1,6 @@
 
 # helps with static types that can't be easily inferred as same parametrically
+same_type(::X, ::Y) where {X,Y} =  same_type(X, Y)
 same_type(::Type{X}, ::Type{Y}) where {X<:OneToSRange,Y<:OneToSRange} = true
 same_type(::Type{X}, ::Type{Y}) where {X<:UnitSRange,Y<:UnitSRange} = true
 same_type(::Type{X}, ::Type{Y}) where {X<:StepSRange,Y<:StepSRange} = true
@@ -8,13 +9,15 @@ same_type(::Type{X}, ::Type{Y}) where {X<:StepSRangeLen,Y<:StepSRangeLen} = true
 same_type(::Type{X}, ::Type{X}) where {X} = true
 same_type(::Type{X}, ::Type{Y}) where {X,Y} = false
 
-function promote_values(::Type{X}, ::Type{Y}) where {X<:AbstractIndex,Y<:AbstractIndex}
+promote_values_rule(::X, ::Y) where {X,Y} = promote_values_rule(X, Y)
+function promote_values_rule(::Type{X}, ::Type{Y}) where {X<:AbstractIndex,Y<:AbstractIndex}
     xv = values_type(X)
     yv = values_type(Y)
     return same_type(xv, yv) ? xv : _promote_rule(xv, yv)
 end
 
-function promote_keys(::Type{X}, ::Type{Y}) where {X<:AbstractIndex,Y<:AbstractIndex}
+promote_keys_rule(::X, ::Y) where {X,Y} = promote_keys_rule(X, Y)
+function promote_keys_rule(::Type{X}, ::Type{Y}) where {X<:AbstractIndex,Y<:AbstractIndex}
     xv = keys_type(X)
     yv = keys_type(Y)
     return same_type(xv, yv) ? xv : _promote_rule(xv, yv)
@@ -26,7 +29,7 @@ function _promote_rule(::Type{X}, ::Type{Y}) where {X,Y}
 end
 
 function Base.promote_rule(::Type{X}, ::Type{Y}) where {X<:AbstractIndex,Y<:AbstractIndex}
-    return similar_type(X, promote_keys(X, Y), promote_values(X, Y))
+    return similar_type(X, promote_keys_rule(X, Y), promote_values_rule(X, Y))
 end
 
 function Base.promote_rule(::Type{X}, ::Type{Y}) where {X<:AbstractIndex,Y<:AbstractUnitRange}

@@ -11,5 +11,3 @@ function Base.broadcasted(das::DefaultArrayStyle{1}, f::typeof(+), r1::AbstractI
         return broadcasted(das, f, promote(r1, r2)...)
     end
 end
-
-

@@ -58,6 +58,8 @@ function Index(
     return Index(keys(ks), vs, uc, lc)
 end
 
+Index{K,Ks,Vs}(idx::Index{K,Ks,Vs}) where {K,Ks,Vs} = copy(idx)
+
 #=
 function Index(
     ks::AbstractVector,
