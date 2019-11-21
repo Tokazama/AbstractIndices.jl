@@ -2,14 +2,18 @@
     A = reshape(Vector(1:16), (4,4))
     Aindices = IndicesArray(A, a = 2:5, b = (:one, :two, :three, :four))
 
-    A2 = reduce(max, Aindices, dims=2)
     A1 = reduce(max, Aindices, dims=1)
+    A2 = reduce(max, Aindices, dims=2)
+    A3 = reduce(max, A, dims=:)
 
-    Aind2 = reduce(max, Aindices, dims=:b)
     Aind1 = reduce(max, Aindices, dims=:a)
+    Aind2 = reduce(max, Aindices, dims=:b)
+    Aind3 = reduce(max, Aindices, dims=:)
 
-    @test A2 == Aind2
+
     @test A1 == Aind1
+    @test A2 == Aind2
+    @test A3 == Aind3
 end
 
 @testset "Base" begin
@@ -20,13 +24,13 @@ end
         @test f(A) == f(Aindices)
         @test f(Aindices; dims=:x) == f(Aindices; dims=1) == f(A; dims=1)
 
-        @test dimnames(f(Aindices; dims=:x)) == (:x, :y) == dimnames(f(Aindices; dims=1))
+        @test indexnames(f(Aindices; dims=:x)) == (:x, :y) == indexnames(f(Aindices; dims=1))
     end
 
     @testset "$f" for f in (cumsum, cumprod, sort)
         @test f(Aindices; dims=:x) == f(Aindices; dims=1) == f(A; dims=1)
 
-        @test dimnames(f(Aindices; dims=:x)) == (:x, :y) == dimnames(f(Aindices; dims=1))
+        @test indexnames(f(Aindices; dims=:x)) == (:x, :y) == indexnames(f(Aindices; dims=1))
 
         @test f([1, 4, 3]) == f(IndicesArray([1, 4, 3], :vec))
 #        @test_throws UndefKeywordError f(nda)
@@ -74,8 +78,8 @@ end
 #        @test_throws UndefKeywordError eachslice(A)
 
         @test (
-            dimnames(first(eachslice(Anamed; dims=:b))) ==
-            dimnames(first(eachslice(Anamed; dims=2))) ==
+            indexnames(first(eachslice(Anamed; dims=:b))) ==
+            indexnames(first(eachslice(Anamed; dims=2))) ==
             (:a, :c)
         )
     end
@@ -104,25 +108,25 @@ end
 #        @test_throws UndefKeywordError mapslices(join, a)
 
         @test (
-            dimnames(mapslices(join, Anamed; dims=:y)) ==
-            dimnames(mapslices(join, Anamed; dims=2)) ==
+            indexnames(mapslices(join, Anamed; dims=:y)) ==
+            indexnames(mapslices(join, Anamed; dims=2)) ==
             (:x, :y)
         )
     end
 
-    @testset "mapreduce" begin
+    @testset "map_reduce" begin
         A = [10 20; 31 40]
         Aindices = IndicesArray(A, (:x, :y))
 
-        @test mapreduce(isodd, |, Aindices) == true == mapreduce(isodd, |, A)
-        @test (mapreduce(isodd, |, Aindices; dims=:x) ==
-               mapreduce(isodd, |, Aindices; dims=1) ==
+        @test map_reduce(isodd, |, Aindices) == true == map_reduce(isodd, |, A)
+        @test (map_reduce(isodd, |, Aindices; dims=:x) ==
+               map_reduce(isodd, |, Aindices; dims=1) ==
                [true false])
-        @test (mapreduce(isodd, |, Aindices; dims=:y) ==
-               mapreduce(isodd, |, Aindices; dims=2) ==
+        @test (map_reduce(isodd, |, Aindices; dims=:y) ==
+               map_reduce(isodd, |, Aindices; dims=2) ==
                [false true]')
-        @test (dimnames(mapreduce(isodd, |, Aindices; dims=:y)) ==
-               dimnames(mapreduce(isodd, |, Aindices; dims=2)) ==
+        @test (indexnames(map_reduce(isodd, |, Aindices; dims=:y)) ==
+               indexnames(map_reduce(isodd, |, Aindices; dims=2)) ==
                (:x, :y))
     end
 
@@ -131,7 +135,7 @@ end
         Aindices = IndicesArray(A, (:x, :y))
 
         @test zero(Aindices) == [0 0; 0 0] == zero(A)
-        @test dimnames(zero(Aindices)) == (:x, :y)
+        @test indexnames(zero(Aindices)) == (:x, :y)
     end
 
     @testset "count" begin
@@ -151,6 +155,6 @@ end  # Base
         @test f(Aindices) == f(A)
         @test f(Aindices; dims=:x) == f(Aindices; dims=1) == f(A; dims=1)
 
-        @test dimnames(f(Aindices; dims=:x)) == (:x, :y) == dimnames(f(Aindices; dims=1))
+        @test indexnames(f(Aindices; dims=:x)) == (:x, :y) == indexnames(f(Aindices; dims=1))
     end
 end

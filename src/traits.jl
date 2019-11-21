@@ -1,199 +1,101 @@
-"""
-    dimnames(x[, i])
+#=
+    IndexLike
 
-Returns the name of `x`. If `x` doesn't have a name then `nothing` is returned.
-If `x` is a `Tuple` then `dimnames` is called on each element of `x`. The
-optional `i` allows calling `dimnames` on a specific element of a `Tuple` or
-returns the ith element of whatever `dimnames` returns. For example, if
-`dimnames(x)` returns a tuple of names then the ith name is returned.
-"""
-dimnames(x::Any) = nothing
-dimnames(x::Any, i::Integer) = _dimnames(dimnames(x), i)
-_dimnames(::Nothing, i::Integer) = nothing
-_dimnames(::Tuple{}, i::Integer) = nothing
-_dimnames(t::Tuple{Vararg{Any}}, i::Integer) where {N} = getfield(t, i)
+There are two components to any index, the keys and the values. These differ
+from dictionaries in that the values must always be a subtype of
+`AbstractUnitRange`. This facilitates a number of convenient traits and
+assumptions concerning and index's behavior. When this behavior is overly
+restrictive it makes sense use an index as component of some other object.
+For example, a dictionary could potentially utilize the keys of an index
+to map to the location of the dictionaries values.
 
-dimnames(::NT) where {NT<:NamedTuple} = fieldnames(NT)
-dimnames(::NT, i::Integer) where {NT<:NamedTuple} = fieldname(NT, i)
-dimnames(x::Tuple) = merge(dimnames.(x))
+# Keys
 
-function dimnames_error(a, call)
-    error("$(typeof(a)) does not have dimension names. Calls to `$(call)` require that `dimnames` be implemented.")
-end
+The only restriction to a collection of keys is that they all be unique to the
+other keys in the same collection. This behavior is similar to what's seen if
+you use `Set` or the keys of most `AbstractDict` subtypes. Keys of an index
+allow the same customization and optimization that is commonly seen throughout
+Julia via variety of dynamic, static, or immutable subtypes of `AbstractVector`.
+Therefore, the only unique quality of keys for an index is the dichotomy offered
+by the `ContinuousTrait` or `DiscreteTrait`.
 
+* Continuous keys : Continuous keys imply an order the inherit to it's type.
+  Therefore, all keys that are continuous are assumed to be some sort of range.
+  This has the potential to speed up many operations but limits the ability to
+  use keys with semantic meaning.
+* Discrete keys: All vectors that are not ranges are assumed to be discrete,
+  offering increased flexibility at the cost of performance.
 
-"""
-    hasdimnames(x) -> Bool
-
-If `x` has dimension names then returns `true`.
-"""
-hasdimnames(x) = _hasdimnames(dimnames(x))
-_hasdimnames(::Nothing) = false
-_hasdimnames(::Tuple{Vararg{Nothing}}) = false
-_hasdimnames(::Any) = true
-
-
-"""
-    unname(x)
-
-Remove the name from a `x`. If `x` doesn't have a name the same instance of `x`
-is returned.
-"""
-unname(x::Any) = x
-unname(nt::NamedTuple{names}) where {names} = Tuple(nt)
-unname(x::Tuple) = unname.(x)
-
-"""
-    findaxes(f, x)
-
-Returns a tuple of indices for which the axes of `x` are true under `f`. If `x`
-has named dimensions this is a tuple of symbols. Otherwise, a tuple of integers
-is returned. If all axes return false under the conditions of `f` then
-`nothing` is returned.
-"""
-findaxes(f, a) = _findaxes(f, axes(a), 1)
-function _findaxes(f, axs::Tuple{Any,Vararg{Any}}, cnt::Int)
-    if f(first(axs))
-        return (cnt, _findaxes(f, tail(axs), cnt+1)...)
-    else
-        return _findaxes(f, tail(axs), cnt+1)
-    end
-end
-_findaxes(f, ::Tuple{}, ::Int) = ()
+It's worth noting that given some customization may help convert a system that
+uses discrete keys into one of continuous keys. For example, using the
+`Unitful.jl` package can facilitate the use of semantic units of measurement
+as a well defined range.
 
 
-# TODO finddims doesn't check that int values are inbounds (it just returns them)
-# There's no point in doing this because all downstream methods will inevitably
-# check that the value is inbounds. But that means that `finddims` would be more
-# appropriately named `to_dims` because this is also how `to_index` behaves.
-# However, `to_dims` is already in base (to a very limited extent). 
-"""
-    finddims(a; dims) -> Tuple{Vararg{Int}}
-
-Returns the dimension that has the corresponding `name`. If `name` doesn't
-match any of the dimension names `0` is returned. If `img` doesn't have `names`
-then the default set of names is searched (e.g., dim_1, dim_2, ...).
-"""
-finddims(a; dims) = finddims(a, dims)
-finddims(x::Any,                   dims::Any                  ) = finddims(dimnames(x), dims)
-finddims(a::AbstractArray{T,N},    dims::Colon                ) where {T,N} = ntuple(i -> i, N)::NTuple{N,Int}
-finddims(x::Any,                   dims::Tuple{Vararg{Int}}   ) = dims
-finddims(::Tuple{Vararg{Nothing}}, dims::Symbol) = 0  # no names to find
-finddims(::Nothing, dims::Int) = dims
-finddims(::Tuple{Vararg{Any}},     dims::Int   ) = dims
-finddims(x::Tuple{Vararg{Union{Symbol,Nothing}}}, dims::Symbol) = _finddims(x, dims)
-@inline function finddims(x::Tuple{Vararg{Symbol}}, dims::Tuple{Vararg{<:Union{Symbol,Integer},N}}) where {N}
-    Tuple(map(i -> finddims(x, i), 1:N))
-end
-Base.@pure function _finddims(dn::NTuple{D,<:Union{Nothing,Symbol}}, name::Symbol) where {D}
-    for i in 1:D
-        getfield(dn, i) === name && return i
-    end
-    return 0
-end
-
-# TODO FIXME error for out of bounds dimension indexing
-dim_out_of_bounds(a, i) = error("Attempt to acces dimension $(i) of $(typeof(a)) ")
-
-"""
-    filteraxes(f, a)
-
-Return the axes of `a`, removing those for which `f` is false. The function `f`
-is passed one argument.
-"""
-filteraxes(f, x) = _catch_empty(_filteraxes(f, axes(x)))
-function _filteraxes(f, t::Tuple)
-    if f(first(t))
-        return (first(t), _filteraxes(f, tail(t))...)
-    else
-        return _filteraxes(f, tail(t))
-    end
-end
-_filteraxes(f, ::Tuple{}) = ()
-
-"""
-    mapaxes(f, a)
-
-map function `f` over the axes of `a`.
-"""
-mapaxes(f, a) = map(f, axes(a))
-
-"""
-    dropaxes(a; dims)
-
-Returns tuple of axes that don't include `dims`.
-"""
-dropaxes(a; dims) = dropaxes(a, dims)
-dropaxes(a, dims) = _dropaxes(axes(a), finddims(a, dims=dims))
-
-_dropaxes(a, dim::Integer) = _dropaxes(a, (Int(dim),))
-function _dropaxes(axs::Tuple{Vararg{<:Any,D}}, dims::NTuple{N,Int}) where {D,N}
-    for i in 1:N
-        1 <= dims[i] <= D || throw(ArgumentError("dropped dims must be in range 1:ndims(A)"))
-        for j = 1:i-1
-            dims[j] == dims[i] && throw(ArgumentError("dropped dims must be unique"))
-        end
-    end
-    d = ()
-    for (i,axis_i) in zip(1:D,axs)
-        if !in(i, dims)
-            d = tuple(d..., axis_i)
-        end
-    end
-    return d
-end
+# Values
+=#
 
 
 """
-    permuteaxes(a, perms)
+    permute_indices(a, perms)
 
 Returns axes of `a` in the order of `perms`.
 """
-permuteaxes(a, perms) = Tuple(map(i -> axes(a, finddims(a, i)), perms))
+permute_indices(a, perms) = permute_indices(axes(a), perms)
+function permute_indices(a::NTuple{N}, perms::NTuple{N,Int}) where {N}
+    return map(i -> getfield(a, i), perms)
+end
 
+matmul_indices(a, b) = _multiply_indices(axes(a), axes(b))
+_multiply_indices(a::Tuple{Any}, b::Tuple{Any,Any}) = (first(a), last(b))
+_multiply_indices(a::Tuple{Any,Any}, b::Tuple{Any,Any}) = (first(a), last(b))
+_multiply_indices(a::Tuple{Any,Any}, b::Tuple{Any}) = (first(a),)
+
+function covcor_indices(a, dims::Integer)
+    if d == 1
+        return (axes(a, 2), axes(a, 2))
+    elseif d == 2
+        return (axes(a, 1), axes(a, 1))
+    end
+end
+
+inv_indices(a) = (axes(a, 2), axes(a, 1))
 
 """
-    reduceaxis(a)
+    reduce_axis(a)
 
 Reduces axis `a` to single value. Allows custom index types to have custom
 behavior throughout reduction methods (e.g., sum, prod, etc.)
 """
-reduceaxis(a::AbstractVector{T}) where {T} = one(T)
+reduce_axis(a::AbstractVector{T}) where {T} = one(T)
 
 """
-    reduceaxes(a; dims)
+    reduce_indices(a; dims)
 """
-reduceaxes(a; dims) = reduceaxes(a, dims)
-reduceaxes(a, dims) = _reduceaxes(axes(a), finddims(a, dims))
-_reduceaxes(axs::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduceaxes(axs, (dims,))
-function _reduceaxes(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D}
-    Tuple(map(i->ifelse(in(i, dims), reduceaxis(axs[i]), axs[i]), 1:D))
+reduce_indices(a; dims) = reduce_indices(a, dims)
+reduce_indices(a, dims) = _reduce_indices(axes(a), to_dims(a, dims))
+_reduce_indices(axs::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduce_indices(axs, (dims,))
+function _reduce_indices(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D}
+    Tuple(map(i->ifelse(in(i, dims), reduce_axis(axs[i]), axs[i]), 1:D))
 end
 
 """
-    namedaxes(a)
-
-Guarantees return of a tuple with named indices.
+    reshape_indices(a, dims)
+    reshape_indices(a, dims...)
 """
-@inline namedaxes(a) = Tuple(map(i -> namedaxes(a, i), 1:ndims(a)))
-namedaxes(a, i::Int) = ensure_name(dimnames(a, i), axes(a, i), i)
+reshape_indices(a, dims::Int...) = reshape_indices(a, Tuple(dims))
+reshape_indices(a, dims::Tuple) = _reshape_indices(axes(a), dims)
+function _reshape_indices(axs::Tuple{Any,Vararg}, dims::Tuple{Int,Vararg})
+    (_to_shape(first(axs), first(dims)), _reshape_indices(tail(axs), tail(dims))...)
+end
+_reshape_indices(axs::Tuple{}, dims::Tuple{}) = ()
 
-ensure_name(name::Symbol, a::TupOrVec, i::Int) = asindex(a, name)
-ensure_name(name::Nothing, a::TupOrVec, i::Int) = asindex(a, Symbol(:dim_, i))
-
-"""
-    unnamedaxes(a)
-
-Returns tuple of axes with no named dimensions.
-"""
-unnamedaxes(a) = unname(axes(a))
-
-
-maybe_tuple(x::Tuple{Any, Vararg}) = x
-maybe_tuple(x::Tuple{Any}) = first(x)
-maybe_tuple(x::Any) = x
-
-_catch_empty(x::Tuple) = x
-_catch_empty(x::NamedTuple) = x
-_catch_empty(::Tuple{}) = nothing
-_catch_empty(::NamedTuple{(),Tuple{}}) = nothing
+function _to_shape(axs, i::Int)
+    if length(axs) == i
+        return copy(axs)
+    elseif length(axs) > i
+        return shrink_last(axs, i)
+    elseif length(axs) < i
+        return grow_last(axs, i)
+    end
+end

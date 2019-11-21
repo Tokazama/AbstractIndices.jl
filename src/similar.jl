@@ -7,7 +7,7 @@ function Base.similar(
     return IndicesArray(similar(parent(a), eltype, length.(new_axes)), new_axes)
 end
 
-function similar_type(::A, new_axes::Type=axestype(A), new_parent::Type=parenttype(A)) where {A<:IndicesArray}
+function StaticRanges.similar_type(::IndicesArray; parent::Type=parenttype(A), axes::Type=axestype(A), new_parent::Type=) where {A<:IndicesArray}
     IndicesArray{eltype(new_parent),ndims(new_parent),new_axes,new_parent}
 end
 

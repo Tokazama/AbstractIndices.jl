@@ -3,10 +3,10 @@
 
     @testset "standard case" begin
         @test a .+ a == 2ones(3)
-        @test dimnames(a .+ a) == (:a,)
+        @test indexnames(a .+ a) == (:a,)
 
         @test a .+ a.+ a == 3ones(3)
-        @test dimnames(a .+ a .+ a) == (:a,)
+        @test indexnames(a .+ a .+ a) == (:a,)
     end
 
     @testset "partially named dims" begin
@@ -15,7 +15,7 @@
 
         lhs = x .+ y
         rhs = y .+ x
-        @test dimnames(lhs) == (:x, :y) == dimnames(rhs)
+        @test indexnames(lhs) == (:x, :y) == indexnames(rhs)
         @test lhs == 2ones(3, 5) == rhs
     end
 
@@ -34,7 +34,7 @@
             ones(3, 3, 3, 3)
         )
         @test lhs_sum == ones(3, 3, 3, 3)
-        @test dimnames(lhs_sum) == (:a, :b, :c, :d)
+        @test indexnames(lhs_sum) == (:a, :b, :c, :d)
 
 
         rhs_sum = .+(
@@ -42,7 +42,7 @@
             IndicesArray(ones(3, 3, 3, 3), (:w, :x, :y, :z))
         )
         @test rhs_sum == ones(3, 3, 3, 3)
-        @test dimnames(rhs_sum) == (:w, :x, :y, :z)
+        @test indexnames(rhs_sum) == (:w, :x, :y, :z)
     end
 
     @testset "broadcasting" begin
@@ -54,9 +54,9 @@
         @test s .+ m == ones(3, 3) == m .+ s
         @test s .+ v .+ m == ones(3, 3) == m .+ s .+ v
 
-        @test dimnames(v .+ m) == (:time, :value) == dimnames(m .+ v)
-        @test dimnames(s .+ m) == (:time, :value) == dimnames(m .+ s)
-        @test dimnames(s .+ v .+ m) == (:time, :value) == dimnames(m .+ s .+ v)
+        @test indexnames(v .+ m) == (:time, :value) == indexnames(m .+ v)
+        @test indexnames(s .+ m) == (:time, :value) == indexnames(m .+ s)
+        @test indexnames(s .+ v .+ m) == (:time, :value) == indexnames(m .+ s .+ v)
     end
 
     #= TODO figure out how to write this for IndicesArray constructors
@@ -85,7 +85,7 @@
         # https://github.com/invenia/NamedDims.jl/issues/8#issuecomment-490124369
         a = IndicesArray(ones(10,20,30), (:x,:y,:z))
         @test a .+ ones(1,20) == 2ones(10,20,30)
-        @test dimnames(a .+ ones(1,20)) == (:x, :y, :z)
+        @test indexnames(a .+ ones(1,20)) == (:x, :y, :z)
     end
 
 end

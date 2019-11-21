@@ -64,13 +64,13 @@
 
             @testset "standard case" begin
                 @test nda * ndb == 3ones(2, 2)
-                @test dimnames(nda * ndb) == (:a, :c)
+                @test indexnames(nda * ndb) == (:a, :c)
 
                 @test ones(4, 3) * ndb == 3ones(4, 2)
-                @test dimnames(ones(4, 3) * ndb) == (nothing, :c)
+                @test indexnames(ones(4, 3) * ndb) == (nothing, :c)
 
                 @test nda * ones(3, 7) == 3ones(2, 7)
-                @test dimnames(nda * ones(3,7)) == (:a, nothing)
+                @test indexnames(nda * ones(3,7)) == (:a, nothing)
             end
 
             #=
@@ -87,12 +87,12 @@
 
             @testset "Matrix-Vector" begin
                 @test mat * bvec == ones(1)
-                @test dimnames(mat * bvec) == (:a,)
+                @test indexnames(mat * bvec) == (:a,)
             end
 
             @testset "Vector-Matrix" begin
                 @test avec * mat == ones(1, 1)
-                @test dimnames(avec * mat) == (:a, :b)
+                @test indexnames(avec * mat) == (:a, :b)
             end
         end
 
@@ -117,13 +117,13 @@ end
 
     @testset "standard case" begin
         @test +(a) == ones(3)
-        @test dimnames(+(a)) == (:a,)
+        @test indexnames(+(a)) == (:a,)
 
         @test +(a, a) == 2ones(3)
-        @test dimnames(+(a, a)) == (:a,)
+        @test indexnames(+(a, a)) == (:a,)
 
         @test +(a, a, a) == 3ones(3)
-        @test dimnames(+(a, a, a)) == (:a,)
+        @test indexnames(+(a, a, a)) == (:a,)
     end
 
     @testset "partially named dims" begin
@@ -132,7 +132,7 @@ end
 
         lhs = x + y
         rhs = y + x
-        @test dimnames(lhs) == (:x, :y) == dimnames(rhs)
+        @test indexnames(lhs) == (:x, :y) == indexnames(rhs)
         @test lhs == 2ones(3, 5) == rhs
     end
 
@@ -155,7 +155,7 @@ end
             ones(3, 3, 3, 3)
         )
         @test lhs_sum == ones(3, 3, 3, 3)
-        @test dimnames(lhs_sum) == (:a, :b, :c, :d)
+        @test indexnames(lhs_sum) == (:a, :b, :c, :d)
 
 
         rhs_sum = +(
@@ -163,7 +163,7 @@ end
             IndicesArray(ones(3, 3, 3, 3), (:w, :x, :y, :z))
         )
         @test rhs_sum == ones(3, 3, 3, 3)
-        @test dimnames(rhs_sum) == (:w, :x, :y, :z)
+        @test indexnames(rhs_sum) == (:w, :x, :y, :z)
 
 
         #=

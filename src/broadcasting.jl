@@ -32,8 +32,6 @@ function Broadcast.copy(bc::Broadcasted{BroadcastIndexStyle{S}}) where S
     return asindex(copy(unwrap_broadcasted(bc)))
 end
 
-
-
 """
     IndicesArrayStyle{S}
 
@@ -56,8 +54,7 @@ function IndicesArrayStyle(a::BroadcastStyle, b::BroadcastStyle)
 end
 
 function Base.BroadcastStyle(::Type{<:IndicesArray{T,N,Ax,A}}) where {T,N,Ax,A}
-    inner_style = typeof(BroadcastStyle(A))
-    return IndicesArrayStyle{inner_style}()
+    return IndicesArrayStyle{typeof(BroadcastStyle(A))}()
 end
 
 
@@ -75,44 +72,68 @@ replacing the `IndicesArray`s with the wrapped array,
 and `IndicesArrayStyle` with the wrapped `BroadcastStyle`.
 """
 unwrap_broadcasted(bc::Broadcasted{IndicesArrayStyle{S}}) where S = Broadcasted{S}(bc.f, map(unwrap_broadcasted, bc.args))
-unwrap_broadcasted(bc::Broadcasted{BroadcastIndexStyle{S}}) where S = Broadcasted{S}(bc.f, map(unwrap_broadcasted, bc.args))
-unwrap_broadcasted(a::AbstractIndicesArray) = parent(a)
+#unwrap_broadcasted(bc::Broadcasted{BroadcastIndexStyle{S}}) where S = Broadcasted{S}(bc.f, map(unwrap_broadcasted, bc.args))
+unwrap_broadcasted(a::IndicesArray) = parent(a)
 #unwrap_broadcasted(a::AbstractIndex) = parent(a)
 unwrap_broadcasted(x) = x
 
 # We need to implement copy because if the wrapper array type does not support setindex
 # then the `similar` based default method will not work
 function Broadcast.copy(bc::Broadcasted{IndicesArrayStyle{S}}) where S
-    return IndicesArray(copy(unwrap_broadcasted(bc)), combine_axes(bc))
+    return IndicesArray(copy(unwrap_broadcasted(bc)), combine_axes(bc.args...))
 end
 # TODO: copyto! for broadcasting
 
 # TODO
-@inline function combine_axes(A::AbstractIndicesArray, B::AbstractIndicesArray, C...)
-    broadcast_shape(combine_axes(axes(A), axes(B)), C...)
+@inline function Broadcast.combine_axes(A::IndicesArray, B::IndicesArray, C...)
+    combine_axes(combine_axes(axes(A), axes(B)), C...)
 end
 
-@inline function combine_axes(A::AbstractArray, B::AbstractIndicesArray, C...)
-    broadcast_shape(combine_axes(axes(A), axes(B)), C...)
+@inline function Broadcast.combine_axes(A::AbstractArray, B::IndicesArray, C...)
+    combine_axes(combine_axes(axes(A), axes(B)), C...)
 end
 
-@inline function combine_axes(A::AbstractIndicesArray, B::AbstractArray, C...)
-    broadcast_shape(combine_axes(axes(A), axes(B)), C...)
+@inline function Broadcast.combine_axes(A::IndicesArray, B::AbstractArray, C...)
+    combine_axes(combine_axes(axes(A), axes(B)), C...)
 end
 
-combine_axes(A::AbstractIndicesArray, B::AbstractIndicesArray) = _combine_axes(axes(A), axes(B))
-combine_axes(A::AbstractIndicesArray, B::AbstractArray) = _combine_axes(axes(A), axes(B))
-combine_axes(A::AbstractArray, B::AbstractIndicesArray) = _combine_axes(axes(A), axes(B))
-combine_axes(A::AbstractIndicesArray) = axes(A)
+Broadcast.combine_axes(A::IndicesArray, B::IndicesArray) = _combine_axes(axes(A), axes(B))
+Broadcast.combine_axes(A::IndicesArray, B::AbstractArray) = _combine_axes(axes(A), axes(B))
+Broadcast.combine_axes(A::AbstractArray, B::IndicesArray) = _combine_axes(axes(A), axes(B))
+Broadcast.combine_axes(A::IndicesArray) = axes(A)
 
-_combine_axes(a::Tuple{Any,Vararg{Any}}, b::Tuple{Any,Vararg{Any}}) = (combine(first(a), first(b)), _combine_axes(tail(a), tail(b))...)
+function _combine_axes(a::Tuple{Any,Vararg{Any}}, b::Tuple{Any,Vararg{Any}})
+    (combine_indices(first(a), first(b))..., _combine_axes(tail(a), tail(b))...)
+end
 _combine_axes(a::Tuple{Any,Vararg{Any}}, b::Tuple{}) = a
 _combine_axes(a::Tuple{}, b::Tuple{Any,Vararg{Any}}) = b
 _combine_axes(a::Tuple{}, b::Tuple{}) = ()
 
-function combine(a::StaticKeys{AKeys}, b::StaticKeys{BKeys}) where {AKeys,BKeys}
-    StaticKeys(merge(AKeys,BKeys))
+function Broadcast.combine_axes(
+    A::Tuple{<:AbstractIndex, Vararg{Any}},
+    B::Tuple{<:AbstractIndex, Vararg{Any}}
+   )
+    (combine_indices(first(A), first(B))..., combine_axes(tail(A), tail(B))...)
 end
 
-combine(a, b) = asindex(combine_keys(a, b), combine_values(a, b), combine_names(a, b))
+function Broadcast.combine_axes(
+    A::Tuple{<:AbstractIndex, Vararg{Any}},
+    B::Tuple{Any, Vararg{Any}}
+   )
+    (combine_indices(first(A), first(B))..., combine_axes(tail(A), tail(B))...)
+end
 
+function Broadcast.combine_axes(
+    A::Tuple{Any, Vararg{Any}},
+    B::Tuple{<:AbstractIndex, Vararg{Any}}
+   )
+    (combine_indices(first(A), first(B))..., combine_axes(tail(A), tail(B))...)
+end
+
+function Broadcast.combine_axes(A::Tuple{}, B::Tuple{<:AbstractIndex, Vararg{Any}})
+    (combine_indices(first(B))..., combine_axes(A, tail(B))...)
+end
+
+function Broadcast.combine_axes(A::Tuple{<:AbstractIndex, Vararg{Any}}, B::Tuple{})
+    (combine_indices(first(A))..., combine_axes(tail(A), B)...)
+end

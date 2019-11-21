@@ -9,8 +9,6 @@
         @test @inferred(keytype(float_offset)) == Float64
         @test @inferred(isempty(float_offset)) == false
         @test @inferred(length(float_offset)) == 10
-        @test @inferred(dimnames(float_offset)) == nothing
-        @test @inferred(unname(float_offset)) == float_offset
         @test @inferred(step(float_offset)) == 1
         @test @inferred(first(float_offset)) == 1
         @test @inferred(firstindex(float_offset)) == 2.0
@@ -26,9 +24,9 @@
         @test @inferred(allunique(symbol_index)) == allunique(keys(symbol_index))
         @test @inferred(getindex(symbol_index, :one)) == 1
         @test @inferred(getindex(symbol_index, :three)) == 3
-   end
+    end
 
-   @testset "iterate vs pairs" begin
+    @testset "iterate vs pairs" begin
         i, state = iterate(symbol_index)
         p = IndexPosition(symbol_index)
         @test (i, state) == (p, p)
@@ -42,7 +40,7 @@
         @test (i, state) == (p, p)
 
         @test collect(pairs(symbol_index)) == [:one => 1, :two => 2, :three => 3]
-   end
+    end
 
     @testset "NamedIndex" begin
         r1 = range(.1, stop = .2, length=5)
@@ -73,4 +71,3 @@
     end
     =#
 end
-

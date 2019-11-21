@@ -1,44 +1,78 @@
-Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::Int) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
-    getindex(values(a), findkeys(keys(a), i))
+### Index
+@propagate_inbounds function Base.getindex(a::AbstractIndex, i::Function)
+    return _getindex(a, to_index(a, i))
+end
+@propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::K) where {K}
+    return _getindex(a, to_index(a, i))
+end
+@propagate_inbounds function Base.getindex(
+    a::AbstractIndex{K},
+    i::AbstractVector{K}
+   ) where {K}
+    return _getindex(a, to_index(a, i))
+end
+@propagate_inbounds function Base.getindex(
+    a::AbstractIndex{K},
+    i::AbstractUnitRange{K}
+   ) where {K}
+    return _getindex(a, to_index(a, i))
 end
 
-Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::K) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-    getindex(values(a), findkeys(keys(a), i))
-end
-
-Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::AbstractVector{Int}) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
-    asindex(getindex(keys(a), findkeys(keys(a), i)), a)
-end
-
-Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::AbstractVector{K}) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-    asindex(getindex(keys(a), findkeys(keys(a), i)), a)
-end
-
-# this is necessary to avoid ambiguities in base
-Base.@propagate_inbounds function getindex(a::AbstractIndex{Int,V,Ks,Vs}, i::AbstractUnitRange{Int}) where {V,Ks<:TupOrVec{Int},Vs<:AbstractUnitRange{V}}
-    asindex(getindex(keys(a), findkeys(keys(a), i)), a)
-end
-
-for (I) in (Int,CartesianIndex{1})
+for I in (Int,CartesianIndex{1})
     @eval begin
-        Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::$I) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-            getindex(values(a), i)
+        # getindex
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{$I}, i::$I)
+            return _getindex(a, to_index(a, i))
+        end
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{$I}, i::AbstractVector{$I})
+            return _getindex(a, to_index(a, i))
+        end
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{$I}, i::AbstractUnitRange{$I})
+            return _getindex(a, to_index(a, i))
         end
 
-        Base.@propagate_inbounds function getindex(a::AbstractIndex{K,V,Ks,Vs}, i::AbstractVector{$I}) where {K,V,Ks<:TupOrVec{K},Vs<:AbstractUnitRange{V}}
-            asindex(getindex(keys(a), i), a)
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::$I) where {K}
+            return _getindex(a, to_index(a, i))
+        end
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::AbstractVector{$I}) where {K}
+            return _getindex(a, to_index(a, i))
+        end
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::AbstractUnitRange{$I}) where {K}
+            return _getindex(a, to_index(a, i))
         end
     end
 end
 
-Base.@propagate_inbounds function getindex(A::AbstractArray{T,N}, i::Vararg{AbstractIndex,N}) where {T,N}
-    getindex(A, to_indices(A, i))
+function _getindex(a::AbstractIndex, inds::AbstractUnitRange{Integer})
+    return similar_type(a)(@inbounds(keys(a)[inds]), @inbounds(values(a)[inds]), AllUnique, true)
 end
 
-Base.Slice(x::AbstractIndex) = Base.Slice(values(x))
+_getindex(a::AbstractIndex, inds::Integer) = @inbounds(getindex(values(a), inds))
 
-Base.@propagate_inbounds function Base.getindex(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
-    @boundscheck checkindex(Bool, a, i)
-    return values(i)
+### IndicesArray
+Base.getindex(a::IndicesArray{T,N}, i::Colon) where {T,N} = a
+
+Base.getindex(a::IndicesVector, i) = _unsafe_getindex(parent(a), (to_index(axes(a, 1), i),))
+
+@propagate_inbounds function Base.getindex(a::IndicesArray{T,N}, i...) where {T,N}
+    return _unsafe_getindex(parent(a), to_indices(axes(a), i))
 end
+
+function _unsafe_getindex(a::AbstractArray{T,N}, inds::NTuple{N,Int}) where {T,N}
+    return @inbounds(getindex(a, inds...))
+end
+
+function _unsafe_getindex(a::AbstractArray{T,N}, inds::Tuple) where {T,N}
+    return IndicesArray(@inbounds(getindex(a, inds...)), _drop_empty(inds))
+end
+
+function _drop_empty(x::Tuple)
+    if length(first(x)) > 1
+        (first(x), _drop_empty(tail(x))...)
+    else
+        _drop_empty(tail(x))
+    end
+end
+_drop_empty(x::Tuple{}) = ()
+
 

@@ -1,11 +1,24 @@
 module AbstractIndices
 
-using LinearAlgebra, Statistics
+using LinearAlgebra, Statistics, Unitful, ArrayInterface, StaticRanges
 
-import Base: length, axes, getindex, setindex, iterate, checkindex, checkbounds
+using ArrayInterface: can_setindex
+
+using Base: to_index, axes
+
+import Base: getindex, setindex, iterate, checkindex, checkbounds
 
 using Base.Broadcast:
     Broadcasted, BroadcastStyle, DefaultArrayStyle, AbstractArrayStyle, Unknown, combine_axes
+
+using StaticRanges:
+    can_set_length,
+    can_set_first,
+    can_set_last,
+    ForwardOrdering,
+    ReverseOrdering,
+    ContinuousTrait,
+    DiscreteTrait
 
 import Base.Broadcast: combine_axes
 
@@ -13,76 +26,49 @@ import Base.Broadcast: combine_axes
 import Base: iterate, isdone, has_offset_axes
 import Base.Iterators: Pairs
 
-import Base: to_index, OneTo, tail, show, to_dim, values, keys
+import Base: OneTo, tail, show, values, keys, @propagate_inbounds
 
 export AbstractIndex,
-       IndexPosition,
-       AxisIndex,
-       OneToIndex,
-       StaticKeys,
-       NamedIndex,
-       AbstractIndicesArray,
+       Index,
        IndicesArray,
-       # methods
-       asindex,
-       dimnames,
-       unname,
-       filteraxes,
-       namedaxes,
-       unnamedaxes,
-       findaxes,
-       finddims,
-       mapaxes,
-       dropaxes,
-       permuteaxes,
-       reduceaxis,
-       reduceaxes,
-       hasdimnames
+       IndicesMatrix,
+       IndicesVector
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
-# AbstractIndex
-include("traits.jl")
-include("abstractindex.jl")
-
+#=
 include("promote_shape.jl")
-include("positions.jl")
 
-include("findkeys.jl")
 include("checkindex.jl")
+
+include("iterate.jl")
+
+include("mutate.jl")
+
+include("setindex.jl")
+
+include("similar.jl")
+include("broadcasting.jl")
+=#
+
+include("abstractindex.jl")
+include("param_checks.jl")
+include("index.jl")
+include("indicesarray.jl")
+
 include("to_index.jl")
 include("to_indices.jl")
 include("getindex.jl")
-include("setindex.jl")
-include("iterate.jl")
-
-include("combine.jl")
-include("union.jl")
-include("vcat.jl")
-include("merge.jl")
-
-
-include("onetoindex.jl")
-include("axisindex.jl")
-include("namedindex.jl")
-include("statickeys.jl")
-
-include("abstractindicesarray.jl")
-include("indicesarray.jl")
 
 
 include("operators.jl")
-include("similar.jl")
-include("broadcasting.jl")
-include("asindex.jl")
-
-const TupleIndices{N} = Tuple{Vararg{<:AbstractIndex,N}}
-
-
-include("indexing.jl")
-include("math.jl")
+include("matmul.jl")
+include("push.jl")
+include("pop.jl")
 include("reduce.jl")
-include("subindices.jl")
+include("dimensions.jl")
+
+#include("subindices.jl")
 
 include("show.jl")
 

@@ -1,5 +1,17 @@
-function Base.promote_shape(a::Tuple{Vararg{Union{AbstractUnitRange,NamedUnitRangeIndex,UnitRangeIndex}}},
-                       b::Tuple{Vararg{Union{AbstractUnitRange,NamedUnitRangeIndex,UnitRangeIndex}}})
+function Base.promote_shape(a::Tuple{Vararg{Union{AbstractUnitRange,AbstractIndex}}}, b)
+    return _promote_shape(a, b)
+end
+function Base.promote_shape(a, b::Tuple{Vararg{Union{AbstractUnitRange,AbstractIndex}}})
+    return _promote_shape(a, b)
+end
+function Base.promote_shape(
+    a::Tuple{Vararg{Union{AbstractUnitRange,AbstractIndex}}},
+    b::Tuple{Vararg{Union{AbstractUnitRange,AbstractIndex}}}
+   )
+    return _promote_shape(a, b)
+end
+
+function _promote_shape(a, b)
     if length(a) < length(b)
         return promote_shape(b, a)
     end

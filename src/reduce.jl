@@ -1,55 +1,59 @@
+"""
+    reduce_indices(a)
 
-function Base.mapslices(f, a::AbstractIndicesArray; dims=:, kwargs...)
-    _mapslices(f, a, dims; kwargs...)
+Reduces axis `a` to single value. Allows custom index types to have custom
+behavior throughout reduction methods (e.g., sum, prod, etc.)
+"""
+reduce_indices(a::AbstractVector{T}) where {T} = one(T)
+
+"""
+    reduce_indices(a; dims)
+"""
+reduce_indices(a; dims) = reduce_indices(a, dims)
+reduce_indices(a, dims) = _reduce_indices(axes(a), dims)
+_reduce_indices(axs::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduce_indices(axs, (dims,))
+function _reduce_indices(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D}
+    Tuple(map(i->ifelse(in(i, dims), reduce_axis(axs[i]), axs[i]), 1:D))
 end
 
-function _mapslices(f, a::AbstractIndicesArray, dims::Colon; kwargs...)
-    return mapslices(f, parent(a); dims=finddims(a, dims), kwargs...)
-end
 
-function _mapslices(f, a::AbstractIndicesArray, dims::Any; kwargs...)
-    d = finddims(a, dims=dims)
-    return maybe_indicesarray(a, mapslices(f, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
-end
+_maybe_array_reduce(a, axs::Tuple) = IndicesArray(a, axs, AllUnique)
+_maybe_array_reduce(a, axs::Tuple{}) = a
 
-function Base.mapreduce(f, op, a::AbstractIndicesArray; dims=:, kwargs...)
-    _mapreduce(f, op, a, dims; kwargs...)
-end
-
-function _mapreduce(f, op, a::AbstractIndicesArray, dims::Colon; kwargs...)
-    return mapreduce(f, op, parent(a); kwargs...)
-end
-
-function _mapreduce(f, op, a::AbstractIndicesArray, dims::Any; kwargs...)
-    d = finddims(a, dims=dims)
-    return maybe_indicesarray(a, mapreduce(f, op, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
-end
-
-function Base.reduce(f, a::AbstractIndicesArray; dims=:, kwargs...)
-    d = finddims(a, dims=dims)
-    maybe_indicesarray(a, reduce(f, parent(a); dims=d, kwargs...), reduceaxes(a, dims=d))
-end
-
-# FIXME Should sort and sort! effect the index labels?
-# TODO cusmum!, cumprod! tests
-# 1 Arg - no default for `dims` keyword
-for (mod, funs) in ((:Base, (:cumsum, :cumsum!, :cumprod, :cumprod!, :sort, :sort!)),)
-    for fun in funs
-        @eval function $mod.$fun(a::AbstractIndicesArray; dims, kwargs...)
-            return maybe_indicesarray(a, $mod.$fun(parent(a); dims=finddims(a, dims), kwargs...), axes(a))
-        end
-
-        # Vector case
-        @eval function $mod.$fun(a::AbstractIndicesVector; kwargs...)
-            return maybe_indicesarray(a, $mod.$fun(parent(a); kwargs...), axes(a))
+for (mod, funs) in ((:Base, (:sum, :prod, :maximum, :minimum, :extrema, :all, :any, :findmax)),
+                    (:Statistics, (:mean, :std, :var, :median)))
+    for f in funs
+        @eval begin
+            function $(mod).$(f)(a::IndicesArray; dims=:, kwargs...)
+                return _maybe_array_reduce(
+                    $(mod).$(f)(a; dims=dims, kwargs...),
+                    reduce_indices(axes(a), dims)
+                )
+            end
         end
     end
 end
 
-function Base.eachslice(a::AbstractIndicesArray; dims, kwargs...)
-    d = finddims(a, dims)
-    slices = eachslice(parent(a); dims=d, kwargs...)
-    return Base.Generator(slices) do slice
-        return maybe_indicesarray(slice, reduceaxes(a, d))
-    end
+# reduce
+function Base.reduce(f, a::IndicesArray; dims=:, kwargs...)
+    return _maybe_array_reduce(
+        reduce(f, parent(a); dims=dims, kwargs...),
+        reduce_indices(axes(a), dims)
+    )
+end
+
+# mapslices
+function Base.mapslices(f, a::IndicesArray; dims=:, kwargs...)
+    return _maybe_array_reduce(
+        mapslices(f, parent(a); dims=dims, kwargs...),
+        reduce_indices(axes(a), dims)
+    )
+end
+
+# mapreduce
+function Base.mapreduce(f, op, a::IndicesArray; dims=:, kwargs...)
+    return _maybe_array_reduce(
+        mapreduce(f, op, parent(a); kwargs...),
+        reduce_indices(axes(a), dims)
+    )
 end

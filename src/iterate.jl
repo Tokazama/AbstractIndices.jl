@@ -1,30 +1,8 @@
-
-Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
-
-Base.eachindex(a::AbstractIndex) = keys(a)
-
 Base.reverse(a::AbstractIndex) = asindex(reverse(keys(a)), reverse(values(a)))
 
-isdone(p::AbstractPosition) = length(parent(p)) == state(p)[1]
+Base.isdone(p::IndexPosition) = length(parent(p)) == state(p)[1]
 
-Base.iterate(p::AbstractPosition) = values(p), nothing
-
-# TODO isbefore
-"""
-    isbefore(a, b) -> Bool
-
-Test if the index position `a` occurs before `b` n
-"""
-function isbefore end
-
-# TODO isafter
-"""
-    isafter(a, b) -> Bool
-
-Test if the index position `a` occurs after `b` n
-"""
-function isafter end
-
+Base.iterate(p::IndexPosition) = values(p), nothing
 
 function iterate(a::AbstractIndex)
     if isempty(a)
@@ -44,8 +22,7 @@ function Base.iterate(a::AbstractIndex, state::Integer)
     end
 end
 
-
-function Base.iterate(a::I, p::IndexPosition{K,V,I}) where {K,V,I<:AbstractIndex{K,V}}
+function Base.iterate(a::AbstractIndex{name1,K,V}, p::IndexPosition{name2,K,V}) where {name1,name2,K,V}
     if isdone(p)
         return nothing
     else

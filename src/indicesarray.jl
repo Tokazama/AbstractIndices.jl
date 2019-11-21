@@ -1,72 +1,137 @@
 """
     IndicesArray
 """
-struct IndicesArray{T,N,A<:Tuple{Vararg{<:Union{AbstractIndex,AbstractPosition},N}},D<:AbstractArray{T,N},F} <: AbstractIndicesArray{T,N,A,D,F}
-    parent::D
-    axes::A
+struct IndicesArray{T,N,P<:AbstractArray{T,N},I<:NTuple{N,AbstractIndex}} <: AbstractArray{T,N}
+    _parent::P
+    _indices::I
 
-    function IndicesArray{T,N}(
-        x::AbstractArray{T,N},
-        axs::Tuple{Vararg{<:AbstractVector,N}}
-       ) where {T,N}
-
-        newaxs = Tuple(map(i -> asindex(axs[i], axes(x, i)), 1:N))
-        f = false
-        for i in newaxs
-            if firstindex(i) != 1
-                f = true
-                break
-            end
-        end
-
-        return new{T,N,typeof(newaxs),typeof(x),f}(x, newaxs)
-    end
-
-    function IndicesArray(x::AbstractArray{T,N}, axs::Tuple{Vararg{<:Union{Symbol,Nothing},N}}) where {T,N}
-        newaxs = Tuple(map(i -> asindex(axes(x, i), getfield(axs, i)), 1:N))
-
-        new{T,N,typeof(newaxs),typeof(x),false}(x, newaxs)
-    end
-
-    function IndicesArray{T,N,A,D}(x::D, axs::A) where {T,N,A,D}
-        f = false
-        for i in axs
-            if firstindex(i) != 1
-                f = true
-                break
-            end
-        end
-
-        return new{T,N,A,D,f}(x, axs)
+    function IndicesArray{T,N,P,I}(parent, indices, uc, lc) where {T,N,P,I}
+        check_index_params(parent, indices, uc, lc)
+        new{T,N,P,I}(parent, indices)
     end
 end
 
-IndicesArray(x::AbstractArray, axs::Vararg{Union{Symbol,Nothing,<:AbstractVector}}) = IndicesArray(x, axs)
+function IndicesArray(
+    p::AbstractArray{T,N},
+    inds::Tuple,
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked,
+   ) where {T,N}
+    return IndicesArray{T,N,typeof(p)}(
+        p,
+        map((a, i) -> _process_index(a, i, uc, lc), axes(p), inds),
+        AllUnique,
+        LengthChecked
+       )
+end
 
-function IndicesArray(x::AbstractArray{T,N}; kwargs...) where {T,N}
-    if isempty(kwargs)
-        IndicesArray{T,N}(x, axes(x))
+_process_index(a, i, uc, lc) = Index(a, i, uc, lc)
+
+_process_index(a, ::Nothing, uc, lc) = Index(a, uc)
+
+function IndicesArray{T,N,P}(
+    p::P,
+    inds::I,
+    uc::Uniqueness,
+    lc::AbstractLengthCheck
+   ) where {T,N,P<:AbstractArray{T,N},I}
+    return IndicesArray{T,N,P,I}(p, inds, uc, lc)
+end
+
+IndicesArray(p::AbstractArray) = IndicesArray(p, indices(p), AllUnique, LengthChecked)
+
+"""
+    indices(x) -> Tuple
+"""
+indices(x::IndicesArray) = axes(x)
+
+function indices(x::AbstractArray)
+    if is_static(x)
+        return map(i -> Index(OneToSRange(i)), size(x))
+    elseif is_fixed(x)
+        return map(i -> Index(OneTo(i)), size(x))
     else
-        IndicesArray{T,N}(x, Tuple([asindex(v, k) for (k,v) in kwargs]))
+        return map(i -> Index(OneToMRange(i)), size(x))
     end
 end
-IndicesArray(x::AbstractArray{T,N}, axs::Tuple) where {T,N} = IndicesArray{T,N}(x,  axs)
+
+"""
+    IndicesVector{T,P,I1,I2}
+
+Alias for two-dimensional `IndicesArray`  with elements of type `T`, parent of
+type `P`, and index of type `I1` and `I2`. Alias for [`IndicesArray{T,1}`](@ref).
+"""
+const IndicesMatrix{T,P<:AbstractMatrix{T},I1,I2} = IndicesArray{T,2,P,Tuple{I1,I2}}
+
+"""
+    IndicesVector{T,P,I}
+
+Alias for one-dimensional `IndicesArray`  with elements of type `T`, parent of
+type `P`, and index of type `I`. Alias for [`IndicesArray{T,1}`](@ref).
+"""
+const IndicesVector{T,P<:AbstractVector{T},I1} = IndicesArray{T,1,P,Tuple{I1}}
+
+"""
+    IndicesVecOrMat{T}
+
+Union type of [`IndicesVector{T}`](@ref) and [`IndicesMatrix{T}`](@ref).
+"""
+const IndicesVecOrMat{T} = Union{IndicesMatrix{T},IndicesVector{T}}
+
+const IndicesAdjoint{T,P<:AbstractVector{T},I} = IndicesMatrix{T,Adjoint{T,P},I}
+
+const IndicesTranspose{T,P<:AbstractVector{T},I} = IndicesMatrix{T,Transpose{T,P},I}
 
 
-const IndicesMatrix{T,Ax1,Ax2,D<:AbstractMatrix{T}} = IndicesArray{T,2,Tuple{Ax1,Ax2},D}
+_maybe_indices_array(x, inds::Tuple) = IndicesArray(x, inds, AllUnique, LengthChecked)
+_maybe_indices_array(x, inds::Tuple{}) = x
 
-const IndicesVector{T,Ax,D<:AbstractVector{T}} = IndicesArray{T,1,Tuple{Ax},D}
 
-const IndicesVecOrMat = Union{IndicesMatrix,IndicesVector}
-#IndicesArray(x::AbstractArray{T,N}, axes::Tuple{Vararg{<:AbstractAxis,N}}) where {T,N} =
-#    IndicesArray{T,N,typeof(x),typeof(axes)}(x, axes)
+Base.parent(x::IndicesArray) = getfield(x, :_parent)
 
-Base.parent(a::IndicesArray) = getproperty(a, :parent)
+Base.axes(x::IndicesArray) = getfield(x, :_indices)
 
-Base.axes(a::IndicesArray) = getproperty(a, :axes)
+Base.axes(x::IndicesArray, i::Int) = axes(x)[i]
 
-# TODO similar function and datatype
-#function Base.similar(f::Union{Function,DataType}, shape::Tuple{AbstractIndex,Vararg{AbstractIndex}})
-#    IndicesArray(f())
-#    # body
-#end
+Base.size(x::IndicesArray, i::Int) = length(axes(x, i))
+
+Base.size(x::IndicesArray{T,N}) where {T,N} = map(i -> length(i), axes(x))
+
+Base.parentindices(x::IndicesArray) = axes(parent(x))
+
+axes_type(::T) where {T<:AbstractArray} = axes_type(T)
+axes_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = I
+
+parent_type(::T) where {T<:AbstractArray} = axes_type(T)
+parent_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = P
+
+###
+### setindex!
+###
+@propagate_inbounds function Base.setindex!(a::IndicesArray, X, inds...)
+    return unsafe_setindex!(parent(a), X, to_indices(axes(a), inds)...)
+end
+
+unsafe_setindex!(a, X, inds::Tuple) = @inbounds(setindex!(a, X, inds...))
+
+function Base.empty!(a::IndicesArray)
+    empty!(axes(a, 1))
+    empty!(parent(a))
+    return a
+end
+
+# `sort` and `sort!` don't change the index, just as it wouldn't on a normal vector
+# TODO cusmum!, cumprod! tests
+# 1 Arg - no default for `dims` keyword
+for (mod, funs) in ((:Base, (:cumsum, :cumprod, :sort, :sort!)),)
+    for fun in funs
+        @eval function $mod.$fun(a::IndicesArray; dims, kwargs...)
+            return IndicesArray($mod.$fun(parent(a), dims=dims, kwargs...), axes(a))
+        end
+
+        # Vector case
+        @eval function $mod.$fun(a::IndicesVector; kwargs...)
+            return IndicesArray($mod.$fun(parent(a); kwargs...), axes(a))
+        end
+    end
+end

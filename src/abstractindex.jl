@@ -1,29 +1,18 @@
 """
-    maybe_dimnames(a, call, maybe)
-
-If `a` has dimension names (i.e. `HasDimNames(a) -> HasDimNames{true}()`) then
-returns `dimnames(a)`. Otherwise returns `maybe(a, call)`. Useful for throwing
-errors that show the offending method in the stack trace.
-"""
-maybe_dimnames(a::Any, call, maybe) = _maybe_dimnames(dimnames(a), a, call, maybe)
-_maybe_dimnames(name::Symbol, a, call, maybe) = name
-_maybe_dimnames(   ::Nothing, a, call, maybe) = maybe(a, call)
-
-axes_error(a, call) = error("$(typeof(a)) does not have axes. Calls to `$(call)` require that `axes` be implemented.")
-
-"""
     AbstractIndex
 
 An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
 detailed examples describing its behavior.
 """
-abstract type AbstractIndex{K,V,Ks,Vs} <: AbstractVector{V} end
+abstract type AbstractIndex{K,V,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
 
-Base.valtype(::Type{<:AbstractIndex{K,V}}) where {K,V} = V
+Base.valtype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = V
 
-Base.keytype(::Type{<:AbstractIndex{K,V}}) where {K,V} = K
+values_type(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Vs
 
-Base.length(a::AbstractIndex) = length(values(a))
+Base.keytype(::Type{<:AbstractIndex{K}}) where {K} = K
+
+keys_type(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Ks
 
 Base.size(a::AbstractIndex) = (length(a),)
 
@@ -35,94 +24,60 @@ Base.step(a::AbstractIndex) = step(values(a))
 
 Base.firstindex(a::AbstractIndex) = first(keys(a))
 
-Base.isempty(a::AbstractIndex) = length(a) == 0
-
 Base.lastindex(a::AbstractIndex) = last(keys(a))
 
 Base.haskey(a::AbstractIndex{K}, key::K) where {K} = key in keys(a)
-Base.haskey(a::AbstractIndex{K1}, key::K2) where {K1,K2} = throw(ArgumentError("invalid key: $key of type $K2"))
 
-# TODO don't love these names but seem most appropriate for now
-# ideally we could have valeltype, valtype, keyeltype, and keytype; but this
-# behavior wouldn't be consistent with what we find in base where keytype
-# refers to an element rather than container
-#
-# maybe change keystype => axistype and valuestype => indextype
-keystype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Ks
-valuestype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Vs
+Base.allunique(a::AbstractIndex) = true
 
+Base.length(a::AbstractIndex) = length(values(a))
 
-have_same_values(::AbstractIndex{K1,V1,Ks1,Vs1}, ::AbstractIndex{K2,V2,Ks2,Vs2}) where {K1,V1,Ks1,Vs1,K2,V2,Ks2,Vs2} = false
-have_same_values(::AbstractIndex{K1,V,Ks1,OneTo{V}}, ::AbstractIndex{K2,V,Ks2,OneTo{V}}) where {K1,V,Ks1,K2,Ks2} = true
-have_same_values(::AbstractIndex{K,V,Ks,Vs}, ::Vs) where {K,V,Ks,Vs} = true
-have_same_values(::AbstractIndex{K,V,Ks,Vs}, ::Vs2) where {K,V,Ks,Vs,Vs2<:AbstractVector} = true
+Base.isempty(a::AbstractIndex) = isempty(values(a))
 
-# only `T<:AbstractUnitRange` can broadcast in base. Until we have a good
-# reason to expand on this behavior we should probably just restrict to it.
-can_broadcast(::T) where {T<:AbstractIndex} = can_broadcast(T)
-can_broadcast(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = false
-can_broadcast(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs<:AbstractUnitRange} = true
+Base.in(a, itr::AbstractIndex) = in(x, values(a))
 
-"""
-    UnitRangeIndex
-"""
-abstract type UnitRangeIndex{K,V,Ks,Vs<:AbstractUnitRange{V}} <: AbstractIndex{K,V,Ks,Vs} end
+Base.eachindex(a::AbstractIndex) = keys(a)
 
-Base.allunique(::UnitRangeIndex) = true
+Base.pairs(a::AbstractIndex) = Base.Iterators.Pairs(a, keys(a))
 
+function StaticRanges.is_dynamic(::Type{T}) where {T<:AbstractIndex}
+    return is_dynamic(values_type(T)) & is_dynamic(keys_type(T))
+end
 
-"""
-    AbstractOneTo
+function StaticRanges.is_fixed(::Type{T}) where {T<:AbstractIndex}
+    return is_fixed(values_type(T)) & is_fixed(keys_type(T))
+end
 
-Abstract type for index keys that wrap a simple `OneTo` set of values.
-"""
-abstract type AbstractOneTo{K,V,Ks} <: UnitRangeIndex{K,V,Ks,OneTo{V}} end
+function StaticRanges.is_static(::Type{T}) where {T<:AbstractIndex}
+    return is_static(values_type(T)) & is_static(keys_type(T))
+end
 
-values(a::AbstractOneTo{K,V,Ks}) where {K,V,Ks} = OneTo{V}(length(a))
-length(a::AbstractOneTo) = length(keys(a))
+function StaticRanges.can_set_first(::Type{T}) where {T<:AbstractIndex}
+    return can_set_first(values_type(T)) & can_set_first(keys_type(T))
+end
 
-"""
-    NamedIndex
+function StaticRanges.can_set_last(::Type{T}) where {T<:AbstractIndex}
+    return can_set_last(values_type(T)) & can_set_last(keys_type(T))
+end
 
-A subtype of `AbstractIndex` with a name.
-"""
-struct NamedIndex{name,K,V,Ks,Vs,I<:AbstractIndex{K,V,Ks,Vs}} <: AbstractIndex{K,V,Ks,Vs}
-    index::I
+function StaticRanges.can_set_length(::Type{T}) where {T<:AbstractIndex}
+    return can_set_length(values_type(T)) & can_set_length(keys_type(T))
+end
 
-    function NamedIndex{name,K,V,Ks,Vs,I}(index::I) where {name,K,V,Ks,Vs,I}
-        new{name,K,V,Ks,Vs,I}(index)
+# FIXME
+Base.Slice(a::AbstractIndex) = x
+
+for (f) in (:(==), :\, :isequal)
+    @eval begin
+        Base.$(f)(a::AbstractIndex, b::AbstractIndex) = $(f)(values(a), values(b))
+        Base.$(f)(a::AbstractIndex, b::AbstractVector) = $(f)(values(a), b)
+        Base.$(f)(a::AbstractVector, b::AbstractIndex) = $(f)(a, values(b))
     end
 end
-reduceaxis(ni::NamedIndex{name}) where {name} = NamedIndex{name}(unname(ni))
 
-const NamedUnitRangeIndex{name,K,V,Ks,Vs,I<:UnitRangeIndex{K,V,Ks,Vs}} = NamedIndex{name,K,V,Ks,Vs,I}
-
-# ≈ Base.DimOrInd
-const DimOrIndex = Union{Integer,AbstractUnitRange,UnitRangeIndex,NamedUnitRangeIndex}
-
-
-function Base.CartesianIndices(axs::Tuple{Vararg{DimOrIndex}})
-    CartesianIndices(values.(axs))
+function set_length!(a::AbstractIndex, len::Int)
+    can_set_length(a) || error("Cannot use set_length! for instances of typeof $(typeof(x)).")
+    set_length!(keys(a), len)
+    set_length!(values(a), len)
+    return a
 end
-
-function Base.LinearIndices(axs::Tuple{Vararg{DimOrIndex}})
-    LinearIndices(values.(axs))
-end
-
-
-"""
-    UniqueChecked
-
-This allows circumventing checking keys for unique keys at construction time if
-this is done elsewhere. If this is used without knowing that all keys provided
-to a structure are unique then unexpected behavior is likely to occur.
-"""
-struct CheckedUnique{T} end
-
-const CheckedUniqueTrue = CheckedUnique{true}()
-
-const CheckedUniqueFalse = CheckedUnique{false}()
-
-CheckedUnique(x::AbstractVector) = CheckedUniqueFalse
-CheckedUnique(x::Tuple) = CheckedUniqueFalse
-CheckedUnique(x::AbstractRange) = CheckedUniqueTrue

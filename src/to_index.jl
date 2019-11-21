@@ -1,26 +1,67 @@
-to_index(a::AbstractIndex{K},   i::Colon) where {K}               = values(a)
-to_index(a::AbstractIndex{K},   i::K) where {K}                   = getindex(values(a), findkeys(keys(a), i))
-to_index(a::AbstractIndex{K},   i::Int) where {K}                 = getindex(values(a), i)
-to_index(a::AbstractIndex{Int}, i::Int)                           = getindex(values(a), findkeys(keys(a), i))
-to_index(a::AbstractIndex{K},   i::CartesianIndex{1}) where{K}    = getindex(values(a), i)
+@propagate_inbounds function Base.to_index(
+    a::AbstractIndex{K},
+    f::Function
+   ) where {K}
+    return _to_index(a, f, find_all(f, keys(a)))
+end
+@propagate_inbounds function Base.to_index(
+    a::AbstractIndex{K},
+    i::K
+   ) where {K}
+    return _to_index(a, i, find_first(==(i), keys(a)))
+end
+@propagate_inbounds function Base.to_index(
+    a::AbstractIndex{K},
+    i::AbstractVector{K}
+   ) where {K}
+    return _to_index(a, i, find_all(==(i), keys(a)))
+end
+@propagate_inbounds function Base.to_index(
+    a::AbstractIndex{K},
+    i::AbstractUnitRange{K}
+   ) where {K}
+    return _to_index(a, i, find_all(==(i), keys(a)))
+end
 
-to_index(a::AbstractIndex{K},   i::AbstractVector{K}) where {K}   = getindex(values(a), findkeys(keys(a), i))
-to_index(a::AbstractIndex{K},   i::AbstractVector{Int}) where {K} = getindex(values(a), i)
-to_index(a::AbstractIndex{Int}, i::AbstractVector{Int})           = getindex(values(a), findkeys(keys(a), i))
-to_index(a::AbstractIndex{K},   i::AbstractVector{CartesianIndex{1}}) where {K} = getindex(values(a), inds)
-
-to_index(a::AbstractPosition) = values(a)
-to_index(a::AbstractVector, i::AbstractPosition) = values(i)
-
-function to_index(a::AbstractIndex{K,V}, i::AbstractPosition{K,V}) where {K,V}
-    if a == parent(i)
-        return values(i)
-    else
-        # TODO don't know if this is the best outcome but should be rare
-        return to_index(a, values(i))
+for I in (Int,CartesianIndex{1})
+    @eval begin
+        # to_index
+        @propagate_inbounds function Base.to_index(a::AbstractIndex{$I}, i::$I)
+            return _to_index(a, i, find_first(==(i), keys(a)))
+        end
+        @propagate_inbounds function Base.to_index(
+            a::AbstractIndex{$I},
+            i::AbstractVector{$I}
+           )
+            return _to_index(a, i, find_all(in(i), keys(a)))
+        end
+        @propagate_inbounds function Base.to_index(
+            a::AbstractIndex{$I},
+            i::AbstractUnitRange{$I}
+           )
+            return _to_index(a, i, find_all(in(i), keys(a)))
+        end
+        @propagate_inbounds function Base.to_index(
+            a::AbstractIndex{K},
+            i::$I
+           ) where {K}
+            return _to_index(a, i, find_first(==(i), values(a)))
+        end
+        @propagate_inbounds function Base.to_index(
+            a::AbstractIndex{K},
+            i::AbstractVector{$I}
+           ) where {K}
+            return _to_index(a, i, find_all(in(i), values(a)))
+        end
+        @propagate_inbounds function Base.to_index(
+            a::AbstractIndex{K},
+            i::AbstractUnitRange{$I}
+           ) where {K}
+            return _to_index(a, i, find_all(in(i), values(a)))
+        end
     end
 end
 
-
-#to_index(a::AbstractVector, i::AbstractIndex) = getindex(a, values(i))
-
+_to_index(a, i, inds) = inds
+_to_index(a, i, inds::AbstractVector{Union{Any,Nothing}}) =  BoundsError(a, i)
+_to_index(a, i, inds::Nothing) = BoundsError(a, i)

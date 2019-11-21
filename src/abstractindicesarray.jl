@@ -14,13 +14,6 @@ const AbstractIndicesAdjoint{T,A,D<:AbstractVector{T},F} = AbstractIndicesMatrix
 
 const AbstractIndicesTranspose{T,A,D<:AbstractVector{T},F} = AbstractIndicesMatrix{T,A,Transpose{T,D},F}
 
-dimnames(a::AbstractIndicesArray) = map(i -> dimnames(i), axes(a))
-function unname(a::AbstractIndicesArray{T,N,A,D}) where {T,N,A,D}
-    axs = unname.(axes(a))
-    similar_type(a, typeof(axs), D)(parent(a), axs)
-end
-
-
 Base.IndexStyle(::Type{<:AbstractIndicesArray{T,N,A,D}}) where {T,N,A,D} = IndexStyle(D)
 
 parenttype(::A) where {A<:AbstractIndicesArray} = parenttype(A)
@@ -30,60 +23,45 @@ axestype(::A) where {A<:AbstractIndicesArray} = axestype(A)
 axestype(::Type{<:AbstractIndicesArray{T,N,A,D}}) where {T,N,A,D} = A
 
 Base.size(a::AbstractIndicesArray) = size(parent(a))
-Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), finddims(a, i))
+Base.size(a::AbstractIndicesArray, i::Any) = size(parent(a), to_dims(a, i))
 
 Base.isempty(a::AbstractIndicesArray) = isempty(parent(a))
 
 Base.length(a::AbstractIndicesArray) = length(parent(a))
 
+indexnames(::A) where {A<:AbstractIndicesArray} = indexnames(A)
+function indexnames(::Type{A})  where {A<:AbstractIndicesArray}
+    map(indexnames, Tuple(axestype(A).parameters))
+end
+
+indexnames(::A, i::Int) where {A<:AbstractIndicesArray} = indexnames(A, i)
+function indexnames(::Type{A}, i::Int)  where {A<:AbstractIndicesArray}
+    indexnames(fieldtype(axestype(A), i))
+end
+
+function unname(a::AbstractIndicesArray{T,N,A,D}) where {T,N,A,D}
+    axs = unname.(axes(a))
+    similar_type(a, typeof(axs), D)(parent(a), axs)
+end
+
+
 Base.has_offset_axes(::A) where {A<:AbstractIndicesArray} = has_offset_axes(A)
 Base.has_offset_axes(::Type{<:AbstractIndicesArray{T,N,A,D,F}}) where {T,N,A,D,F} = F
 
-function Base.dropdims(a::AbstractIndicesArray; dims)
-    d = finddims(a, dims=dims)
-    p = dropaxes(parent(a); dims=d)
-    axs = dropaxes(a, dims=d)
-
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
+function maybe_indices_array(A::AbstractArray{T}, a::AbstractArray{T}, axs) where {T}
+    similar_type(A, typeof(axs), typeof(a))(a, axs)
 end
+maybe_indices_array(A::AbstractArray{T}, a::T, axs) where {T} = a
+maybe_indices_array(A::AbstractArray, a, axs) = a
 
-function Base.permutedims(a::AbstractIndicesArray, perm)
-    p = permutedims(parent(a), perm)
-    axs = permuteaxes(a, perm)
-    return similar_type(a, typeof(axs), typeof(p))(p, axs)
-end
+# incase A is an array of arrays
 
-for f in (
-    :(Base.transpose),
-    :(Base.adjoint),
-    :(Base.permutedims),
-    :(LinearAlgebra.pinv))
+#function maybe_indices_array(A::AbstractArray{T}, a::AbstractArray{T}, axs) where {T}
+#    similar_type(A, typeof(axs), typeof(a))(a, axs)
+#end
+#maybe_indices_array(A::AbstractArray{T}, a::T, axs) where {T} = a
+#maybe_indices_array(A::AbstractArray, a, axs) = a
 
-    # Vector
-    @eval function $f(a::AbstractIndicesVector)
-        p = $f(parent(a))
-        axs = (OneIndex(1), axes(a, 1))
-        return similar_type(a, typeof(axs), typeof(p))(p, axs)
-    end
-
-    # Vector Double Transpose
-    if f !== :permutedims
-        @eval begin
-            function $f(a::Union{AbstractIndicesAdjoint,AbstractIndicesTranspose})
-                p = $f(parent(a))
-                axs = (axes(a, 2),)
-                return similar_type(a, typeof(axs), typeof(p))(p, axs)
-            end
-        end
-    end
-
-    # Matrix
-    @eval function $f(a::AbstractIndicesMatrix)
-        p = $f(parent(a))
-        axs = (axes(a, 2), axes(a, 1))
-        return similar_type(a, typeof(axs), typeof(p))(p, axs)
-    end
-end
 
 for f in (:zero, :one, :copy)
     @eval function Base.$(f)(a::AbstractIndicesArray)
@@ -98,6 +76,4 @@ selectdim
 copyto
 reverse
 iterate
-promote_shape
-reshape
 =#
