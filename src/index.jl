@@ -28,7 +28,25 @@ function Index(
     uc::Uniqueness=UnkownUnique,
     lc::AbstractLengthCheck=LengthNotChecked
    ) where {K}
-    return Index{K,typeof(ks),typeof(vs)}(ks, vs, uc, lc)
+    return Index{K}(ks, vs, uc, lc)
+end
+
+function Index{K}(
+    ks::Ks,
+    vs::AbstractUnitRange{Int},
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked
+   ) where {K,Ks<:AbstractVector{K}}
+    return Index{K,Ks}(ks, vs, uc, lc)
+end
+
+function Index{K,Ks}(
+    ks::Ks,
+    vs::AbstractUnitRange{Int},
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked
+   ) where {K,Ks<:AbstractVector{K}}
+    return Index{K,Ks,typeof(vs)}(ks, vs, uc, lc)
 end
 
 function Index(
@@ -40,6 +58,7 @@ function Index(
     return Index(keys(ks), vs, uc, lc)
 end
 
+#=
 function Index(
     ks::AbstractVector,
     vs::AbstractIndex{K,Int},
@@ -48,6 +67,7 @@ function Index(
    ) where {K}
     return Index(ks, values(vs), uc, lc)
 end
+=#
 
 Index(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
 
@@ -55,7 +75,9 @@ Base.keys(idx::Index) = getfield(idx, :_keys)
 
 Base.values(idx::Index) = getfield(idx, :_values)
 
-StaticRanges.similar_type(x::Index) = Index
+function StaticRanges.similar_type(::Type{T}, ks_type::Type=keys_type(T), vs_type::Type=values_type(T)) where {T<:Index}
+    return Index{eltype(ks_type),ks_type,vs_type}
+end
 
 function Base.setproperty!(idx::Index{K,Ks,Vs}, p::Symbol, val) where {K,Ks,Vs}
     if is_dynamic(idx)

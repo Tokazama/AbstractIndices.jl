@@ -4,14 +4,16 @@
 An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
 detailed examples describing its behavior.
 """
-abstract type AbstractIndex{K,V,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
+abstract type AbstractIndex{K,V<:Integer,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
 
 Base.valtype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = V
 
+values_type(::T) where {T} = values_type(T)
 values_type(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Vs
 
 Base.keytype(::Type{<:AbstractIndex{K}}) where {K} = K
 
+keys_type(::T) where {T} = keys_type(T)
 keys_type(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Ks
 
 Base.size(a::AbstractIndex) = (length(a),)
@@ -72,8 +74,32 @@ for (f) in (:(==), :\, :isequal)
         Base.$(f)(a::AbstractIndex, b::AbstractIndex) = $(f)(values(a), values(b))
         Base.$(f)(a::AbstractIndex, b::AbstractVector) = $(f)(values(a), b)
         Base.$(f)(a::AbstractVector, b::AbstractIndex) = $(f)(a, values(b))
+        Base.$(f)(a::AbstractIndex, b::OrdinalRange) = $(f)(values(a), b)
+        Base.$(f)(a::OrdinalRange, b::AbstractIndex) = $(f)(a, values(b))
     end
 end
+
+for f in (:+, :-)
+    @eval begin
+        function Base.$(f)(x::AbstractIndex, y::AbstractIndex)
+            if same_type()
+                return similar_type(x)(combine_keys(x, y), +(values(x), values(y)))
+            else
+                return $(f)(promote(x, y)...)
+            end
+        end
+
+        Base.$(f)(x::AbstractIndex, y::AbstractVector) = $(f)(promote(x, y)...)
+
+        Base.$(f)(x::AbstractVector, y::AbstractIndex) = $(f)(promote(x, y)...)
+
+        Base.$(f)(x::AbstractIndex, y::AbstractUnitRange) = $(f)(promote(x, y)...)
+
+        Base.$(f)(x::AbstractUnitRange, y::AbstractIndex) = $(f)(promote(x, y)...)
+    end
+end
+
+
 
 function set_length!(a::AbstractIndex, len::Int)
     can_set_length(a) || error("Cannot use set_length! for instances of typeof $(typeof(x)).")
@@ -81,3 +107,45 @@ function set_length!(a::AbstractIndex, len::Int)
     set_length!(values(a), len)
     return a
 end
+
+"""
+    index_keys_type(values)
+
+Returns the appropriate keys type for an index given the values. If `values` is
+already and `AbstractIndex` then it returns the same as `keys_type`.
+
+```
+julia> index_keys_type(1:10)
+Base.OneTo(10)
+
+julia> index_keys_type(mrange(1, 10))
+OneToMRange(10)
+
+julia> index_keys_type(srange(1, 10))
+OneToSRange(10)
+```
+"""
+index_keys_type(::T) where {T<:AbstractIndex} = keys_type(T)
+index_keys_type(::T) where {T} = index_keys_type(T)
+function index_keys_type(::Type{T}) where {T<:AbstractUnitRange}
+    if is_static(T)
+        return OneToSRange{Int}
+    elseif is_fixed(T)
+        return OneTo{Int}
+    else
+        return OneToMRange{Int}
+    end
+end
+
+combine_keys(x::AbstractIndex, y::AbstractIndex) = _combine_keys(keys(x), keys(y))
+function _combine_keys(x, y)
+    if same_type(x, y)
+        return __combine_keys(x, y)
+    else
+        return _combine_keys(promote(x, y)...)
+    end
+end
+
+# TODO more complete key combination rules
+__combine_keys(x, y) = copy(x)
+

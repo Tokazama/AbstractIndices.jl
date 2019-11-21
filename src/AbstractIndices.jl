@@ -4,7 +4,7 @@ using LinearAlgebra, Statistics, Unitful, ArrayInterface, StaticRanges
 
 using ArrayInterface: can_setindex
 
-using Base: to_index, axes
+using Base: to_index, axes, broadcasted
 
 import Base: getindex, setindex, iterate, checkindex, checkbounds
 
@@ -18,9 +18,11 @@ using StaticRanges:
     ForwardOrdering,
     ReverseOrdering,
     ContinuousTrait,
-    DiscreteTrait
+    DiscreteTrait,
+    similar_type
 
 import Base.Broadcast: combine_axes
+
 
 # iterators
 import Base: iterate, isdone, has_offset_axes
@@ -56,6 +58,8 @@ include("param_checks.jl")
 include("index.jl")
 include("indicesarray.jl")
 
+include("promotion.jl")
+
 include("to_index.jl")
 include("to_indices.jl")
 include("getindex.jl")
@@ -67,7 +71,7 @@ include("push.jl")
 include("pop.jl")
 include("reduce.jl")
 include("dimensions.jl")
-
+include("math.jl")
 #include("subindices.jl")
 
 include("show.jl")
