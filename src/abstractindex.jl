@@ -136,3 +136,18 @@ function index_keys_type(::Type{T}) where {T<:AbstractUnitRange}
         return OneToMRange{Int}
     end
 end
+
+#StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
+
+const OneToIndex{K,V,Ks} = AbstractIndex{K,V,Ks,OneTo{V}}
+
+const OneToMIndex{K,V,Ks} = AbstractIndex{K,V,Ks,OneToMRange{V}}
+
+const OneToSIndex{K,V,Ks,L} = AbstractIndex{K,V,Ks,OneToSRange{V,L}}
+
+const OffsetIndex{K,V,Ks} = AbstractIndex{K,V,Ks,UnitRange{V}}
+
+const OffsetMIndex{K,V,Ks} = AbstractIndex{K,V,Ks,UnitMRange{V}}
+
+const OffsetSIndex{K,V,Ks,F,L} = AbstractIndex{K,V,Ks,UnitSRange{V,F,L}}
+

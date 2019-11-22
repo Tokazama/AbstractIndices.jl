@@ -62,6 +62,31 @@ for I in (Int,CartesianIndex{1})
     end
 end
 
-_to_index(a, i, inds) = inds
+_to_index(a, i, inds::Integer) = inds
+_to_index(a, i, inds::AbstractUnitRange) = unsafe_reindex(a, inds)
 _to_index(a, i, inds::AbstractVector{Union{Any,Nothing}}) =  BoundsError(a, i)
 _to_index(a, i, inds::Nothing) = BoundsError(a, i)
+
+
+"""
+    reindex()
+"""
+function reindex(a::AbstractIndex, inds::AbstractUnitRange)
+    @boundscheck checkbounds(a, inds)
+    return unsafe_reindex(a, inds)
+end
+
+"""
+    unsafe_reindex()
+"""
+function unsafe_reindex(a::AbstractIndex, inds::AbstractUnitRange)
+    return similar_type(a)(@inbounds(keys(a)[inds]), _reindex(values(a), inds))
+end
+
+_reindex(a::OneTo{T}, inds::AbstractUnitRange) where {T} = OneTo{T}(length(inds))
+_reindex(a::OneToMRange{T}, inds::AbstractUnitRange) where {T} = OneToMRange{T}(length(inds))
+_reindex(a::OneToSRange{T}, inds::AbstractUnitRange) where {T} = OneToSRange{T}(length(inds))
+
+_reindex(a::UnitRange{T}, inds::AbstractUnitRange) where {T} = UnitRange{T}(first(a), first(a) + length(inds) - 1)
+_reindex(a::UnitMRange{T}, inds::AbstractUnitRange) where {T} = UnitMRange{T}(first(a), first(a) + length(inds) - 1)
+_reindex(a::UnitSRange{T}, inds::AbstractUnitRange) where {T} = UnitSRange{T}(first(a), first(a) + length(inds) - 1)

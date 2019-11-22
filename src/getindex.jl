@@ -55,7 +55,7 @@ Base.getindex(a::IndicesArray{T,N}, i::Colon) where {T,N} = a
 Base.getindex(a::IndicesVector, i) = _unsafe_getindex(parent(a), (to_index(axes(a, 1), i),))
 
 @propagate_inbounds function Base.getindex(a::IndicesArray{T,N}, i...) where {T,N}
-    return _unsafe_getindex(parent(a), to_indices(axes(a), i))
+    return _unsafe_getindex(parent(a), to_indices(a, i))
 end
 
 function _unsafe_getindex(a::AbstractArray{T,N}, inds::NTuple{N,Int}) where {T,N}
@@ -66,7 +66,8 @@ function _unsafe_getindex(a::AbstractArray{T,N}, inds::Tuple) where {T,N}
     return IndicesArray(@inbounds(getindex(a, inds...)), _drop_empty(inds))
 end
 
-function _drop_empty(x::Tuple)
+#_drop_empty(x::Tuple{Colon,Vararg}) = 
+function _drop_empty(x::Tuple{Any,Vararg})
     if length(first(x)) > 1
         (first(x), _drop_empty(tail(x))...)
     else

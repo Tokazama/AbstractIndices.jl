@@ -4,7 +4,7 @@ using LinearAlgebra, Statistics, Unitful, ArrayInterface, StaticRanges
 
 using ArrayInterface: can_setindex
 
-using Base: to_index, axes, broadcasted
+using Base: to_index, axes, broadcasted, AbstractCartesianIndex, @_propagate_inbounds_meta
 
 import Base: getindex, setindex, iterate, checkindex, checkbounds
 
@@ -24,7 +24,10 @@ using StaticRanges:
     AbstractStepRange,
     AbstractStepRangeLen,
     AbstractLinRange,
-    StaticUnitRange
+    StaticUnitRange,
+    Length,
+    Size
+
 
 import Base.Broadcast: combine_axes
 
@@ -39,7 +42,15 @@ export AbstractIndex,
        Index,
        IndicesArray,
        IndicesMatrix,
-       IndicesVector
+       IndicesVector,
+       # reexports
+       mrange,
+       srange,
+       OneToSRange,
+       OneToMRange,
+       UnitMRange,
+       UnitSRange
+
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
@@ -60,6 +71,7 @@ include("similar.jl")
 include("abstractindex.jl")
 include("param_checks.jl")
 include("index.jl")
+include("indices.jl")
 include("indicesarray.jl")
 
 include("promotion.jl")

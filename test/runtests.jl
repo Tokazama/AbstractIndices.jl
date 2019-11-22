@@ -4,17 +4,7 @@ import Base: OneTo
 
 #include("uniqueness_tests.jl")
 include("matmul_tests.jl")
-
-@testset "Addition" begin
-    a = IndicesArray(ones(3))
-    @test +(a) == ones(3)
-
-    @test +(a, a) == 2ones(3)
-
-    @test +(a, a, a) == 3ones(3)
-end
-
-
+include("math_tests.jl")
 
 #=
 include("abstractindex.jl")
@@ -25,3 +15,5 @@ include("math.jl")
 include("reduce.jl")
 include("broadcasting.jl")
 =#
+
+

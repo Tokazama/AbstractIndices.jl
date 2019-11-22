@@ -3,7 +3,7 @@
     y = rand(3, 7)
     z = rand(7)
 
-    xi = IndicesArray(x)
+    xi = IndicesArray(x, (mrange(2.0, 5.0), mrange(2.0, 4.0)))
     yi = IndicesArray(y)
     zi = IndicesArray(z)
 

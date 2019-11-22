@@ -12,6 +12,15 @@ struct Index{K,Ks,Vs} <: AbstractIndex{K,Int,Ks,Vs}
     end
 end
 
+function Index{K,Ks,Vs}(
+    ks::Ks2,
+    vs::Vs2,
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked
+   ) where {K,Ks<:AbstractVector{K},Vs,Ks2,Vs2}
+    return Index(Ks(ks), Vs(vs), uc, lc)
+end
+
 function Index(ks::AbstractVector, uc::Uniqueness=UnkownUnique)
     if is_static(ks)
         return Index(ks, OneToSRange(length(ks)), uc, LengthChecked)
@@ -77,7 +86,11 @@ Base.keys(idx::Index) = getfield(idx, :_keys)
 
 Base.values(idx::Index) = getfield(idx, :_values)
 
-function StaticRanges.similar_type(::Type{T}, ks_type::Type=keys_type(T), vs_type::Type=values_type(T)) where {T<:Index}
+function StaticRanges.similar_type(
+    idx::Index,
+    ks_type::Type=similar_type(keys(idx)),
+    vs_type::Type=similar_type(values(idx))
+   )
     return Index{eltype(ks_type),ks_type,vs_type}
 end
 
@@ -110,3 +123,7 @@ function Base.setproperty!(idx::Index{K,Ks,Vs}, p::Symbol, val) where {K,Ks,Vs}
         error("The keys and values of an Index must be mutable to use `setproperty!`, got $(typeof(idx)).")
     end
 end
+
+
+# TODO: is this the best fall back for and AbstractIndex?
+AbstractIndex(x) = Index(x)

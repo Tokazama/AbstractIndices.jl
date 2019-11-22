@@ -5,9 +5,9 @@ matmul_indices(a::Tuple{Any,Any}, b::Tuple{Any}    ) = (first(a),)
 matmul_indices(a::Tuple{Any},     b::Tuple{Any}    ) = ()
 
 @inline function covcor_indices(a, dims::Int)
-    if d === 1
+    if dims === 1
         return (axes(a, 2), axes(a, 2))
-    elseif d === 2
+    elseif dims === 2
         return (axes(a, 1), axes(a, 1))
     else
         error("dims must be 1 or 2.")
@@ -20,10 +20,9 @@ inv_indices(a) = (axes(a, 2), axes(a, 1))
 for f in (:cor, :cov)
     @eval begin 
         function Statistics.$f(a::IndicesMatrix; dims=1, kwargs...)
-            d = to_dims(a, dims)
-            return _maybe_indices_array_getindex(
-                Statistics.$f(parent(a); dims=d, kwargs...),
-                covcor_axes(a, d)
+            return _maybe_indices_array(
+                Statistics.$f(parent(a); dims=dims, kwargs...),
+                covcor_indices(a, dims)
                )
         end
 

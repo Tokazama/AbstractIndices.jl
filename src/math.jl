@@ -1,3 +1,4 @@
+#=
 function Base.broadcasted(das::DefaultArrayStyle{1}, f::typeof(+), r1::AbstractIndex, r2::AbstractUnitRange)
     return broadcasted(das, f, promote(r1, r2)...)
 end
@@ -11,3 +12,21 @@ function Base.broadcasted(das::DefaultArrayStyle{1}, f::typeof(+), r1::AbstractI
         return broadcasted(das, f, promote(r1, r2)...)
     end
 end
+=#
+
+# Between arrays
+@inline Base.:+(a::IndicesArray, b::IndicesArray) = map(+, a, b)
+@inline Base.:+(a::AbstractArray, b::IndicesArray) = map(+, a, b)
+@inline Base.:+(a::IndicesArray, b::AbstractArray) = map(+, a, b)
+
+@inline Base.:-(a::IndicesArray, b::IndicesArray) = map(-, a, b)
+@inline Base.:-(a::AbstractArray, b::IndicesArray) = map(-, a, b)
+@inline Base.:-(a::IndicesArray, b::AbstractArray) = map(-, a, b)
+
+
+# Scalar-array
+@inline Base.:*(a::Number, b::IndicesArray) = broadcast(*, a, b)
+@inline Base.:*(a::IndicesArray, b::Number) = broadcast(*, a, b)
+
+@inline Base.:/(a::IndicesArray, b::Number) = broadcast(/, a, b)
+@inline Base.:\(a::Number, b::IndicesArray) = broadcast(\, a, b)

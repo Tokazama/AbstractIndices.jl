@@ -25,15 +25,27 @@ function IndicesArray(
        )
 end
 
-_process_index(a, i, uc, lc) = Index(a, i, uc, lc)
+function IndicesArray(
+    p::AbstractVector,
+    inds::AbstractVector,
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked,
+   )
+    return IndicesArray(p, (inds,), uc, lc)
+end
 
+
+function _process_index(a, i, uc, lc)
+    check_index_length(a, i, lc)
+    return Index(i, uc)
+end
+
+_process_index(a, ::Nothing, uc, lc) = Index(a, uc)
 function _process_index(a, i::AbstractIndex, uc, lc)
     check_index_length(a, i, lc)
     return i
 end
 
-
-_process_index(a, ::Nothing, uc, lc) = Index(a, uc)
 
 function IndicesArray{T,N,P}(
     p::P,
@@ -88,25 +100,42 @@ const IndicesAdjoint{T,P<:AbstractVector{T},I} = IndicesMatrix{T,Adjoint{T,P},I}
 
 const IndicesTranspose{T,P<:AbstractVector{T},I} = IndicesMatrix{T,Transpose{T,P},I}
 
-
 _maybe_indices_array(x, inds::Tuple) = IndicesArray(x, inds, AllUnique, LengthChecked)
 _maybe_indices_array(x, inds::Tuple{}) = x
 
+axes_type(::T) where {T<:AbstractArray} = axes_type(T)
+axes_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = I
 
 Base.parent(x::IndicesArray) = getfield(x, :_parent)
 
 Base.axes(x::IndicesArray) = getfield(x, :_indices)
 
-Base.axes(x::IndicesArray, i::Int) = axes(x)[i]
+function to_dim(a::IndicesArray{T,N}, i::Int) where {T,N}
+    @boundscheck if i < 1 || i > N
+        throw(BoundsError(axes(a), i))
+    end
+    return i
+end
 
-Base.size(x::IndicesArray, i::Int) = length(axes(x, i))
+function to_dim(a::Tuple{Vararg{Any,N}}, i::Int) where {N}
+    @boundscheck if i < 1 || i > N
+        throw(BoundsError(axes(a), i))
+    end
+    return i
+end
 
-Base.size(x::IndicesArray{T,N}) where {T,N} = map(i -> length(i), axes(x))
+@propagate_inbounds Base.axes(a::IndicesArray, i) = unsafe_axes(axes(a), to_dim(a, i))
+unsafe_axes(axs::Tuple, idx) = @inbounds(getindex(axs, idx))
+
+@propagate_inbounds Base.size(a::IndicesArray, i) = length(axes(a, i))
+
+Base.size(a::IndicesArray) = map(length, axes(a))
+
+@inline Base.length(a::IndicesArray) = _length(axes(a))
+_length(axs::Tuple{AbstractIndex,Vararg{Any}}) = length(first(axs)) * _length(tail(axs))
+_length(axs::Tuple{AbstractIndex}) = length(first(axs))
 
 Base.parentindices(x::IndicesArray) = axes(parent(x))
-
-axes_type(::T) where {T<:AbstractArray} = axes_type(T)
-axes_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = I
 
 parent_type(::T) where {T<:AbstractArray} = axes_type(T)
 parent_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = P
