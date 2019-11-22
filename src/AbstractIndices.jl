@@ -71,7 +71,6 @@ include("similar.jl")
 include("abstractindex.jl")
 include("param_checks.jl")
 include("index.jl")
-include("indices.jl")
 include("indicesarray.jl")
 
 include("promotion.jl")
