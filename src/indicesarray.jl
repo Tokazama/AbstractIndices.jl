@@ -144,7 +144,7 @@ parent_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = P
 ### setindex!
 ###
 @propagate_inbounds function Base.setindex!(a::IndicesArray, X, inds...)
-    return unsafe_setindex!(parent(a), X, to_indices(axes(a), inds)...)
+    return unsafe_setindex!(parent(a), X, to_indices(axes(a), inds))
 end
 
 unsafe_setindex!(a, X, inds::Tuple) = @inbounds(setindex!(a, X, inds...))
@@ -169,4 +169,35 @@ for (mod, funs) in ((:Base, (:cumsum, :cumprod, :sort, :sort!)),)
             return IndicesArray($mod.$fun(parent(a); kwargs...), axes(a))
         end
     end
+end
+
+function Base.similar(
+    a::IndicesArray{T},
+    eltype::Type=T,
+    axs=axes(a)
+   ) where {T}
+    return IndicesArray(similar(parent(a), eltype, map(length, axs)), _drop_empty(axs))
+end
+
+function Base.similar(
+    a::AbstractArray{T},
+    eltype::Type,
+    axs::Tuple{Vararg{AbstractIndex}}
+   ) where {T}
+    return IndicesArray(similar(a, eltype, map(length, axs)), _drop_empty(axs))
+end
+
+function Base.similar(
+    ::Type{A},
+    eltype::Type,
+    axs::Tuple{Vararg{AbstractIndex}}
+   ) where {A<:AbstractArray}
+    return IndicesArray(similar(A, eltype, map(length, axs)), _drop_empty(axs))
+end
+
+function Base.similar(
+    ::Type{A},
+    axs::Tuple{Vararg{AbstractIndex}}
+   ) where {A<:AbstractArray}
+    return IndicesArray(similar(A, map(length, axs)), _drop_empty(axs))
 end

@@ -58,7 +58,7 @@ end
     a = IndicesArray(ones(3))
     @test -(a) == -ones(3)
     @test -(a, a) == -(parent(a), parent(a))
-    @test -(a, a, a) == -(parent(a), parent(a), parent(a))
+    @test -(a, a, a) == parent(a) - parent(a) - parent(a)
     @test -(a, parent(a)) == -(parent(a), parent(a))
     @test -(parent(a), a) == -(parent(a), parent(a))
 end

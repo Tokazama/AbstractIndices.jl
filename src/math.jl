@@ -19,6 +19,12 @@ end
 @inline Base.:+(a::AbstractArray, b::IndicesArray) = map(+, a, b)
 @inline Base.:+(a::IndicesArray, b::AbstractArray) = map(+, a, b)
 
+
+
+@inline Base.:-(a::IndicesArray, b::IndicesArray, c...) = -(map(-, a, b), c...)
+@inline Base.:-(a::AbstractArray, b::IndicesArray, c...) = -(map(-, a, b), c...)
+@inline Base.:-(a::IndicesArray, b::AbstractArray, c...) = -(map(-, a, b), c...)
+
 @inline Base.:-(a::IndicesArray, b::IndicesArray) = map(-, a, b)
 @inline Base.:-(a::AbstractArray, b::IndicesArray) = map(-, a, b)
 @inline Base.:-(a::IndicesArray, b::AbstractArray) = map(-, a, b)

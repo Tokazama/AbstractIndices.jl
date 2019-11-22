@@ -15,9 +15,3 @@ function Base.similar(::Type{T}, dims::DimOrIndex...) where {T<:AbstractArray}
     similar(T, dims)
 end
 
-function Base.similar(
-    ::Type{T},
-    shape::Tuple{<:DimOrIndex,Vararg{<:DimOrIndex}}
-   ) where {T<:AbstractArray}
-    IndicesArray(similar(T, length.(shape)), shape)
-end
