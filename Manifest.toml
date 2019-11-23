@@ -81,9 +81,3 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
-
-[[Unitful]]
-deps = ["LinearAlgebra", "Random"]
-git-tree-sha1 = "92bdf0ccfa9612b167d0adaadef832a09971ceb0"
-uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "0.17.0"

@@ -1,6 +1,6 @@
 module AbstractIndices
 
-using LinearAlgebra, Statistics, Unitful, ArrayInterface, StaticRanges
+using LinearAlgebra, Statistics, ArrayInterface, StaticRanges
 
 using ArrayInterface: can_setindex
 
