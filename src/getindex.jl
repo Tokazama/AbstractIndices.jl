@@ -4,42 +4,42 @@
 @propagate_inbounds function Base.getindex(a::AbstractIndex, i::Function)
     return _getindex(a, to_index(a, i))
 end
-@propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::K) where {K}
+@propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::K) where {name,K}
     return _getindex(a, to_index(a, i))
 end
 @propagate_inbounds function Base.getindex(
-    a::AbstractIndex{K},
+    a::AbstractIndex{name,K},
     i::AbstractVector{K}
-   ) where {K}
+   ) where {name,K}
     return _getindex(a, to_index(a, i))
 end
 @propagate_inbounds function Base.getindex(
-    a::AbstractIndex{K},
+    a::AbstractIndex{name,K},
     i::AbstractUnitRange{K}
-   ) where {K}
+   ) where {name,K}
     return _getindex(a, to_index(a, i))
 end
 
 for I in (Int,CartesianIndex{1})
     @eval begin
         # getindex
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{$I}, i::$I)
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,$I}, i::$I) where {name}
             return _getindex(a, to_index(a, i))
         end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{$I}, i::AbstractVector{$I})
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,$I}, i::AbstractVector{$I}) where {name}
             return _getindex(a, to_index(a, i))
         end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{$I}, i::AbstractUnitRange{$I})
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,$I}, i::AbstractUnitRange{$I}) where {name}
             return _getindex(a, to_index(a, i))
         end
 
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::$I) where {K}
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::$I) where {name,K}
             return _getindex(a, to_index(a, i))
         end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::AbstractVector{$I}) where {K}
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::AbstractVector{$I}) where {name,K}
             return _getindex(a, to_index(a, i))
         end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{K}, i::AbstractUnitRange{$I}) where {K}
+        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::AbstractUnitRange{$I}) where {name,K}
             return _getindex(a, to_index(a, i))
         end
     end
@@ -62,12 +62,16 @@ Base.getindex(a::IndicesVector, i) = _unsafe_getindex(parent(a), (to_index(axes(
     return _unsafe_getindex(parent(a), to_indices(a, i))
 end
 
-function _unsafe_getindex(a::AbstractArray{T,N}, inds::NTuple{N,Int}) where {T,N}
+@propagate_inbounds function Base.getindex(a::IndicesArray{T,N}, i...) where {T,N}
+    return _unsafe_getindex(parent(a), to_indices(a, i))
+end
+
+function _unsafe_getindex(a::AbstractArray, inds::NTuple{N,Int}) where {N}
     return @inbounds(getindex(a, inds...))
 end
 
-function _unsafe_getindex(a::AbstractArray{T,N}, inds::Tuple) where {T,N}
-    return IndicesArray(@inbounds(getindex(a, inds...)), _drop_empty(inds))
+function _unsafe_getindex(a::AbstractArray, inds::Tuple)
+    return IndicesArray(@inbounds(getindex(a, values.(inds)...)), _drop_empty(inds))
 end
 
 #_drop_empty(x::Tuple{Colon,Vararg}) = 

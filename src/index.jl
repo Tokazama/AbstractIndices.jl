@@ -101,10 +101,10 @@ Base.values(idx::Index) = getfield(idx, :_values)
 
 function StaticRanges.similar_type(
     idx::Index{name},
-    ks_type::Type=similar_type(keys(idx)),
-    vs_type::Type=similar_type(values(idx))
+    ks_type::Type=keys_type(idx),
+    vs_type::Type=values_type(idx)
    ) where {name}
-    return Index{name,eltype(ks_type),ks_type,vs_type}
+    return Index{name,eltype(ks_type),eltype(vs_type),ks_type,vs_type}
 end
 
 function Base.setproperty!(idx::Index{name,K,V,Ks,Vs}, p::Symbol, val) where {name,K,V,Ks,Vs}

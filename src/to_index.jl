@@ -1,62 +1,62 @@
 @propagate_inbounds function Base.to_index(
-    a::AbstractIndex{K},
+    a::AbstractIndex{name,K},
     f::Function
-   ) where {K}
+   ) where {name,K}
     return _to_index(a, f, find_all(f, keys(a)))
 end
 @propagate_inbounds function Base.to_index(
-    a::AbstractIndex{K},
+    a::AbstractIndex{name,K},
     i::K
-   ) where {K}
+   ) where {name,K}
     return _to_index(a, i, find_first(==(i), keys(a)))
 end
 @propagate_inbounds function Base.to_index(
-    a::AbstractIndex{K},
+    a::AbstractIndex{name,K},
     i::AbstractVector{K}
-   ) where {K}
-    return _to_index(a, i, find_all(==(i), keys(a)))
+   ) where {name,K}
+    return _to_index(a, i, find_all(in(i), keys(a)))
 end
 @propagate_inbounds function Base.to_index(
-    a::AbstractIndex{K},
+    a::AbstractIndex{name,K},
     i::AbstractUnitRange{K}
-   ) where {K}
-    return _to_index(a, i, find_all(==(i), keys(a)))
+   ) where {name,K}
+    return _to_index(a, i, find_all(in(i), keys(a)))
 end
 
 for I in (Int,CartesianIndex{1})
     @eval begin
         # to_index
-        @propagate_inbounds function Base.to_index(a::AbstractIndex{$I}, i::$I)
+        @propagate_inbounds function Base.to_index(a::AbstractIndex{name,$I}, i::$I) where {name}
             return _to_index(a, i, find_first(==(i), keys(a)))
         end
         @propagate_inbounds function Base.to_index(
-            a::AbstractIndex{$I},
+            a::AbstractIndex{name,$I},
             i::AbstractVector{$I}
-           )
+           ) where {name}
             return _to_index(a, i, find_all(in(i), keys(a)))
         end
         @propagate_inbounds function Base.to_index(
-            a::AbstractIndex{$I},
+            a::AbstractIndex{name,$I},
             i::AbstractUnitRange{$I}
-           )
+           ) where {name}
             return _to_index(a, i, find_all(in(i), keys(a)))
         end
         @propagate_inbounds function Base.to_index(
-            a::AbstractIndex{K},
+            a::AbstractIndex{name,K},
             i::$I
-           ) where {K}
+           ) where {name,K}
             return _to_index(a, i, find_first(==(i), values(a)))
         end
         @propagate_inbounds function Base.to_index(
-            a::AbstractIndex{K},
+            a::AbstractIndex{name,K},
             i::AbstractVector{$I}
-           ) where {K}
+           ) where {name,K}
             return _to_index(a, i, find_all(in(i), values(a)))
         end
         @propagate_inbounds function Base.to_index(
-            a::AbstractIndex{K},
+            a::AbstractIndex{name,K},
             i::AbstractUnitRange{$I}
-           ) where {K}
+           ) where {name,K}
             return _to_index(a, i, find_all(in(i), values(a)))
         end
     end

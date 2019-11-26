@@ -77,6 +77,8 @@ include("indicesarray.jl")
 include("similar.jl")
 include("promotion.jl")
 
+include("checkbounds.jl")
+
 include("to_index.jl")
 include("to_indices.jl")
 include("getindex.jl")
