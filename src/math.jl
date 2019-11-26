@@ -36,3 +36,4 @@ end
 
 @inline Base.:/(a::IndicesArray, b::Number) = broadcast(/, a, b)
 @inline Base.:\(a::Number, b::IndicesArray) = broadcast(\, a, b)
+

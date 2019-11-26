@@ -1,3 +1,4 @@
+matmul_indices(a, b) = _multiply_indices(axes(a), axes(b))
 matmul_indices(a::AbstractArray,  b::AbstractArray ) = matmul_indices(indices(a), indices(b))
 matmul_indices(a::Tuple{Any},     b::Tuple{Any,Any}) = (first(a), last(b))
 matmul_indices(a::Tuple{Any,Any}, b::Tuple{Any,Any}) = (first(a), last(b))
@@ -30,15 +31,15 @@ for f in (:cor, :cov)
     end
 end
 
-for (A,B,fa,fb) in ((:AbstractMatrix, :IndicesMatrix, identity, parent),
-                    (:AbstractMatrix, :IndicesVector, identity, parent),
-                    (:IndicesMatrix,  :AbstractVector, parent, parent),
-                    (:IndicesMatrix,  :AbstractMatrix, parent, identity),
-                    (:IndicesVector,  :AbstractMatrix, parent, identity),
-                    (:AbstractVector, :IndicesMatrix, identity, parent),
-                    (:IndicesMatrix,  :IndicesVector, parent, parent),
-                    (:IndicesMatrix,  :IndicesMatrix, parent, parent),
-                    (:IndicesVector,  :IndicesMatrix, parent, parent))
+for (A,B,fa,fb) in ((:AbstractMatrix, :IndicesMatrix,  identity, parent),
+                    (:AbstractMatrix, :IndicesVector,  identity, parent),
+                    (:IndicesMatrix,  :AbstractVector, parent,   parent),
+                    (:IndicesMatrix,  :AbstractMatrix, parent,   identity),
+                    (:IndicesVector,  :AbstractMatrix, parent,   identity),
+                    (:AbstractVector, :IndicesMatrix,  identity, parent),
+                    (:IndicesMatrix,  :IndicesVector,  parent,   parent),
+                    (:IndicesMatrix,  :IndicesMatrix,  parent,   parent),
+                    (:IndicesVector,  :IndicesMatrix,  parent,   parent))
     @eval begin
         function Base.:*(a::$A, b::$B)
             _maybe_indices_array(*($(fa)(a), $(fb)(b)), matmul_indices(a, b))

@@ -17,15 +17,6 @@
         @test @inferred(valtype(float_offset)) == Int
     end
 
-    @testset "Symbol Index" begin
-        @test @inferred(keys(symbol_index)) == (:one, :two, :three)
-        @test @inferred(values(symbol_index)) == Base.OneTo(3)
-        @test @inferred(length(symbol_index)) == 3
-        @test @inferred(allunique(symbol_index)) == allunique(keys(symbol_index))
-        @test @inferred(getindex(symbol_index, :one)) == 1
-        @test @inferred(getindex(symbol_index, :three)) == 3
-    end
-
     @testset "iterate vs pairs" begin
         i, state = iterate(symbol_index)
         p = IndexPosition(symbol_index)

@@ -4,17 +4,17 @@
 An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
 detailed examples describing its behavior.
 """
-abstract type AbstractIndex{K,V<:Integer,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
+abstract type AbstractIndex{name,K,V<:Integer,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
 
-Base.valtype(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = V
+Base.valtype(::Type{<:AbstractIndex{name,K,V,Ks,Vs}}) where {name,K,V,Ks,Vs} = V
 
 values_type(::T) where {T} = values_type(T)
-values_type(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Vs
+values_type(::Type{<:AbstractIndex{name,K,V,Ks,Vs}}) where {name,K,V,Ks,Vs} = Vs
 
-Base.keytype(::Type{<:AbstractIndex{K}}) where {K} = K
+Base.keytype(::Type{<:AbstractIndex{name,K}}) where {name,K} = K
 
 keys_type(::T) where {T} = keys_type(T)
-keys_type(::Type{<:AbstractIndex{K,V,Ks,Vs}}) where {K,V,Ks,Vs} = Ks
+keys_type(::Type{<:AbstractIndex{name,K,V,Ks,Vs}}) where {name,K,V,Ks,Vs} = Ks
 
 Base.size(a::AbstractIndex) = (length(a),)
 
@@ -28,7 +28,7 @@ Base.firstindex(a::AbstractIndex) = first(keys(a))
 
 Base.lastindex(a::AbstractIndex) = last(keys(a))
 
-Base.haskey(a::AbstractIndex{K}, key::K) where {K} = key in keys(a)
+Base.haskey(a::AbstractIndex{name,K}, key::K) where {name,K} = key in keys(a)
 
 Base.allunique(a::AbstractIndex) = true
 
@@ -139,15 +139,14 @@ end
 
 #StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
 
-const OneToIndex{K,V,Ks} = AbstractIndex{K,V,Ks,OneTo{V}}
+const OneToIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,OneTo{V}}
 
-const OneToMIndex{K,V,Ks} = AbstractIndex{K,V,Ks,OneToMRange{V}}
+const OneToMIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,OneToMRange{V}}
 
-const OneToSIndex{K,V,Ks,L} = AbstractIndex{K,V,Ks,OneToSRange{V,L}}
+const OneToSIndex{name,K,V,Ks,L} = AbstractIndex{name,K,V,Ks,OneToSRange{V,L}}
 
-const OffsetIndex{K,V,Ks} = AbstractIndex{K,V,Ks,UnitRange{V}}
+const OffsetIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitRange{V}}
 
-const OffsetMIndex{K,V,Ks} = AbstractIndex{K,V,Ks,UnitMRange{V}}
+const OffsetMIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitMRange{V}}
 
-const OffsetSIndex{K,V,Ks,F,L} = AbstractIndex{K,V,Ks,UnitSRange{V,F,L}}
-
+const OffsetSIndex{name,K,V,Ks,F,L} = AbstractIndex{name,K,V,Ks,UnitSRange{V,F,L}}

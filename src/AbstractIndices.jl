@@ -43,6 +43,9 @@ export AbstractIndex,
        IndicesArray,
        IndicesMatrix,
        IndicesVector,
+       # methods
+       find_axes,
+       filter_axes,
        # reexports
        mrange,
        srange,
@@ -65,14 +68,13 @@ include("mutate.jl")
 
 include("setindex.jl")
 
-include("similar.jl")
 =#
 
 include("abstractindex.jl")
 include("param_checks.jl")
 include("index.jl")
 include("indicesarray.jl")
-
+include("similar.jl")
 include("promotion.jl")
 
 include("to_index.jl")
@@ -85,9 +87,13 @@ include("matmul.jl")
 include("push.jl")
 include("pop.jl")
 include("reduce.jl")
+include("permutedims.jl")
+include("dropdims.jl")
 include("dimensions.jl")
 include("math.jl")
 include("broadcasting.jl")
 include("show.jl")
+
+include("LinearAlgebra/LinearAlgebra.jl")
 
 end

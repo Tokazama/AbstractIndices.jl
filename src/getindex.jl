@@ -1,4 +1,6 @@
+###
 ### Index
+###
 @propagate_inbounds function Base.getindex(a::AbstractIndex, i::Function)
     return _getindex(a, to_index(a, i))
 end
@@ -49,7 +51,9 @@ end
 
 _getindex(a::AbstractIndex, inds::Integer) = @inbounds(getindex(values(a), inds))
 
+###
 ### IndicesArray
+###
 Base.getindex(a::IndicesArray{T,N}, i::Colon) where {T,N} = a
 
 Base.getindex(a::IndicesVector, i) = _unsafe_getindex(parent(a), (to_index(axes(a, 1), i),))
@@ -75,5 +79,4 @@ function _drop_empty(x::Tuple{Any,Vararg})
     end
 end
 _drop_empty(x::Tuple{}) = ()
-
 

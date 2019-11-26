@@ -1,24 +1,24 @@
 """
     Index
 """
-struct Index{K,Ks,Vs} <: AbstractIndex{K,Int,Ks,Vs}
+struct Index{name,K,V,Ks,Vs} <: AbstractIndex{name,K,V,Ks,Vs}
     _keys::Ks
     _values::Vs
 
-    function Index{K,Ks,Vs}(ks::Ks, vs::Vs, uc::Uniqueness, lc::AbstractLengthCheck) where {K,Ks<:AbstractVector{K},Vs}
+    function Index{name,K,V,Ks,Vs}(ks::Ks, vs::Vs, uc::Uniqueness, lc::AbstractLengthCheck) where {name,K,V,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}}
         check_index_length(ks, vs, lc)
         check_index_uniqueness(ks, uc)
-        return new{K,Ks,Vs}(ks, vs)
+        return new{name,K,V,Ks,Vs}(ks, vs)
     end
 end
 
-function Index{K,Ks,Vs}(
+function Index{name,K,V,Ks,Vs}(
     ks::Ks2,
     vs::Vs2,
     uc::Uniqueness=UnkownUnique,
     lc::AbstractLengthCheck=LengthNotChecked
-   ) where {K,Ks<:AbstractVector{K},Vs,Ks2,Vs2}
-    return Index(Ks(ks), Vs(vs), uc, lc)
+   ) where {name,K,V,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V},Ks2,Vs2}
+    return Index{name}(Ks(ks), Vs(vs), uc, lc)
 end
 
 function Index(ks::AbstractVector, uc::Uniqueness=UnkownUnique)
@@ -31,54 +31,67 @@ function Index(ks::AbstractVector, uc::Uniqueness=UnkownUnique)
     end
 end
 
-function Index(
-    ks::AbstractVector{K},
-    vs::AbstractUnitRange{Int},
-    uc::Uniqueness=UnkownUnique,
-    lc::AbstractLengthCheck=LengthNotChecked
-   ) where {K}
-    return Index{K}(ks, vs, uc, lc)
-end
-
-function Index{K}(
-    ks::Ks,
-    vs::AbstractUnitRange{Int},
-    uc::Uniqueness=UnkownUnique,
-    lc::AbstractLengthCheck=LengthNotChecked
-   ) where {K,Ks<:AbstractVector{K}}
-    return Index{K,Ks}(ks, vs, uc, lc)
-end
-
-function Index{K,Ks}(
-    ks::Ks,
-    vs::AbstractUnitRange{Int},
-    uc::Uniqueness=UnkownUnique,
-    lc::AbstractLengthCheck=LengthNotChecked
-   ) where {K,Ks<:AbstractVector{K}}
-    return Index{K,Ks,typeof(vs)}(ks, vs, uc, lc)
+function Index{name}(
+    ks::AbstractVector,
+    uc::Uniqueness=UnkownUnique
+   ) where {name,K}
+    if is_static(ks)
+        return Index{name}(ks, OneToSRange(length(ks)), uc, LengthChecked)
+    elseif is_fixed(ks)
+        return Index{name}(ks, OneTo(length(ks)), uc, LengthChecked)
+    else
+        return Index{name}(ks, OneToMRange(length(ks)), uc, LengthChecked)
+    end
 end
 
 function Index(
-    ks::AbstractIndex,
+    ks::AbstractVector,
     vs::AbstractUnitRange{Int},
     uc::Uniqueness=UnkownUnique,
     lc::AbstractLengthCheck=LengthNotChecked
    )
-    return Index(keys(ks), vs, uc, lc)
+    return Index{nothing}(ks, vs, uc, lc)
 end
 
-Index{K,Ks,Vs}(idx::Index{K,Ks,Vs}) where {K,Ks,Vs} = copy(idx)
-
-#=
-function Index(
-    ks::AbstractVector,
-    vs::AbstractIndex{K,Int},
+function Index{name}(
+    ks::AbstractVector{K},
+    vs::AbstractUnitRange{Int},
     uc::Uniqueness=UnkownUnique,
     lc::AbstractLengthCheck=LengthNotChecked
-   ) where {K}
-    return Index(ks, values(vs), uc, lc)
+   ) where {name,K}
+    return Index{name,K}(ks, vs, uc, lc)
 end
-=#
+
+function Index{name,K}(
+    ks::Ks,
+    vs::AbstractUnitRange{V},
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked
+   ) where {name,K,V,Ks<:AbstractVector{K}}
+    return Index{name,K,V,Ks}(ks, vs, uc, lc)
+end
+
+function Index{name,K,V,Ks}(
+    ks::Ks,
+    vs::AbstractUnitRange{V},
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked
+   ) where {name,K,V,Ks<:AbstractVector{K}}
+    return Index{name,K,V,Ks,typeof(vs)}(ks, vs, uc, lc)
+end
+
+function Index(
+    ks::AbstractIndex,
+    vs::AbstractUnitRange,
+    uc::Uniqueness=UnkownUnique,
+    lc::AbstractLengthCheck=LengthNotChecked
+   )
+    return Index{indnames(ks)}(keys(ks), vs, uc, lc)
+end
+
+function Index{name1,K,V,Ks,Vs}(idx::Index) where {name1,name2,K,V,Ks,Vs}
+    return Index{}()
+end
 
 Index(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
 
@@ -87,14 +100,14 @@ Base.keys(idx::Index) = getfield(idx, :_keys)
 Base.values(idx::Index) = getfield(idx, :_values)
 
 function StaticRanges.similar_type(
-    idx::Index,
+    idx::Index{name},
     ks_type::Type=similar_type(keys(idx)),
     vs_type::Type=similar_type(values(idx))
-   )
-    return Index{eltype(ks_type),ks_type,vs_type}
+   ) where {name}
+    return Index{name,eltype(ks_type),ks_type,vs_type}
 end
 
-function Base.setproperty!(idx::Index{K,Ks,Vs}, p::Symbol, val) where {K,Ks,Vs}
+function Base.setproperty!(idx::Index{name,K,V,Ks,Vs}, p::Symbol, val) where {name,K,V,Ks,Vs}
     if is_dynamic(idx)
         if p === :keys
             if val isa Ks

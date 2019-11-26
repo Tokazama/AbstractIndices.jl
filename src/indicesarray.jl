@@ -25,6 +25,10 @@ function IndicesArray(
        )
 end
 
+function IndicesArray(p::AbstractArray{T,N}, axs::Tuple{Vararg{<:Union{Symbol,Nothing},N}}) where {T,N}
+    IndicesArray{T,N,typeof(p)}(p, indices(p, axs), AllUnique, LengthChecked)
+end
+
 function IndicesArray(
     p::AbstractVector,
     inds::AbstractVector,
@@ -32,18 +36,6 @@ function IndicesArray(
     lc::AbstractLengthCheck=LengthNotChecked,
    )
     return IndicesArray(p, (inds,), uc, lc)
-end
-
-
-function _process_index(a, i, uc, lc)
-    check_index_length(a, i, lc)
-    return Index(i, uc)
-end
-
-_process_index(a, ::Nothing, uc, lc) = Index(a, uc)
-function _process_index(a, i::AbstractIndex, uc, lc)
-    check_index_length(a, i, lc)
-    return i
 end
 
 
@@ -56,7 +48,27 @@ function IndicesArray{T,N,P}(
     return IndicesArray{T,N,P,I}(p, inds, uc, lc)
 end
 
-IndicesArray(p::AbstractArray) = IndicesArray(p, indices(p), AllUnique, LengthChecked)
+#IndicesArray(p::AbstractArray) = IndicesArray(p, indices(p), AllUnique, LengthChecked)
+
+function IndicesArray(x::AbstractArray{T,N}; kwargs...) where {T,N}
+    if isempty(kwargs)
+        return IndicesArray(x, axes(x), AllUnique, LengthChecked)
+    else
+        return IndicesArray(x, Tuple([Index{v}(k) for (k,v) in kwargs]))
+    end
+end
+
+function _process_index(a, i, uc, lc)
+    check_index_length(a, i, lc)
+    return Index(i, uc)
+end
+
+_process_index(a, ::Nothing, uc, lc) = Index(a, uc)
+function _process_index(a, i::AbstractIndex, uc, lc)
+    check_index_length(a, i, lc)
+    return i
+end
+
 
 """
     indices(x) -> Tuple
@@ -73,8 +85,19 @@ function indices(x::AbstractArray)
     end
 end
 
+function indices(x::AbstractArray{T,N}, dimnames::Tuple{Vararg{Union{Symbol,Nothing},N}}) where {T,N}
+    if is_static(x)
+        return map((d, s) -> Index{d}(OneToSRange(s)), dimnames, size(x))
+    elseif is_fixed(x)
+        return map((d, s) -> Index{d}(OneTo(s)), dimnames, size(x))
+    else
+        return map((d, s) -> Index{d}(OneToMRange(s)), dimnames, size(x))
+    end
+end
+
+
 """
-    IndicesVector{T,P,I1,I2}
+    IndicesMatrix{T,P,I1,I2}
 
 Alias for two-dimensional `IndicesArray`  with elements of type `T`, parent of
 type `P`, and index of type `I1` and `I2`. Alias for [`IndicesArray{T,1}`](@ref).
@@ -90,15 +113,27 @@ type `P`, and index of type `I`. Alias for [`IndicesArray{T,1}`](@ref).
 const IndicesVector{T,P<:AbstractVector{T},I1} = IndicesArray{T,1,P,Tuple{I1}}
 
 """
-    IndicesVecOrMat{T}
+    IVecOrMat{T}
 
 Union type of [`IndicesVector{T}`](@ref) and [`IndicesMatrix{T}`](@ref).
 """
 const IndicesVecOrMat{T} = Union{IndicesMatrix{T},IndicesVector{T}}
 
-const IndicesAdjoint{T,P<:AbstractVector{T},I} = IndicesMatrix{T,Adjoint{T,P},I}
+const IndicesAdjoint{T,P,I1,I2} = IndicesMatrix{T,Adjoint{T,P},I1,I2}
 
-const IndicesTranspose{T,P<:AbstractVector{T},I} = IndicesMatrix{T,Transpose{T,P},I}
+const IndicesTranspose{T,P,I1,I2} = IndicesMatrix{T,Transpose{T,P},I1,I2}
+
+const IndicesDiagonal{T,V,I1,I2} = IndicesMatrix{T,Diagonal{T,V},I1,I2}
+
+const IndicesQRCompactWY{T,P,I1,I2} = LinearAlgebra.QRCompactWY{T,IndicesMatrix{T,P,I1,I2}}
+
+const IndicesQRPivoted{T,P,I1,I2} = QRPivoted{T,IndicesMatrix{T,P,I1,I2}}
+
+const IndicesQR{T,P,I1,I2} = QR{T,IndicesMatrix{T,P,I1,I2}}
+
+const IndicesQRUnion{T,P,I1,I2} = Union{IndicesQRCompactWY{T,P,I1,I2},
+                                        IndicesQRPivoted{T,P,I1,I2},
+                                        IndicesQR{T,P,I1,I2}}
 
 _maybe_indices_array(x, inds::Tuple) = IndicesArray(x, inds, AllUnique, LengthChecked)
 _maybe_indices_array(x, inds::Tuple{}) = x
@@ -111,13 +146,6 @@ Base.parent(x::IndicesArray) = getfield(x, :_parent)
 Base.axes(x::IndicesArray) = getfield(x, :_indices)
 
 function to_dim(a::IndicesArray{T,N}, i::Int) where {T,N}
-    @boundscheck if i < 1 || i > N
-        throw(BoundsError(axes(a), i))
-    end
-    return i
-end
-
-function to_dim(a::Tuple{Vararg{Any,N}}, i::Int) where {N}
     @boundscheck if i < 1 || i > N
         throw(BoundsError(axes(a), i))
     end
@@ -139,6 +167,40 @@ Base.parentindices(x::IndicesArray) = axes(parent(x))
 
 parent_type(::T) where {T<:AbstractArray} = axes_type(T)
 parent_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = P
+
+"""
+    filter_axes(f, a)
+
+Return the axes of `a`, removing those for which `f` is false. The function `f`
+is passed one argument.
+"""
+filter_axes(f::Function, x::AbstractArray) = _catch_empty(_filter_axes(f, axes(x)))
+function _filter_axes(f, t::Tuple)
+    if f(first(t))
+        return (first(t), _filter_axes(f, tail(t))...)
+    else
+        return _filter_axes(f, tail(t))
+    end
+end
+_filter_axes(f, ::Tuple{}) = ()
+
+"""
+    find_axes(f, x)
+
+Returns a tuple of indices for which the axes of `x` are true under `f`. If `x`
+has named dimensions this is a tuple of symbols. Otherwise, a tuple of integers
+is returned. If all axes return false under the conditions of `f` then
+`nothing` is returned.
+"""
+find_axes(f::Function, a) = _find_axes(f, axes(a), 1)
+function _find_axes(f::Function, axs::Tuple{Any,Vararg{Any}}, cnt::Int)
+    if f(first(axs))
+        return (cnt, _find_axes(f, tail(axs), cnt+1)...)
+    else
+        return _find_axes(f, tail(axs), cnt+1)
+    end
+end
+_find_axes(f, ::Tuple{}, ::Int) = ()
 
 ###
 ### setindex!
@@ -171,33 +233,10 @@ for (mod, funs) in ((:Base, (:cumsum, :cumprod, :sort, :sort!)),)
     end
 end
 
-function Base.similar(
-    a::IndicesArray{T},
-    eltype::Type=T,
-    axs=axes(a)
-   ) where {T}
-    return IndicesArray(similar(parent(a), eltype, map(length, axs)), _drop_empty(axs))
-end
-
-function Base.similar(
-    a::AbstractArray{T},
-    eltype::Type,
-    axs::Tuple{Vararg{AbstractIndex}}
-   ) where {T}
-    return IndicesArray(similar(a, eltype, map(length, axs)), _drop_empty(axs))
-end
-
-function Base.similar(
-    ::Type{A},
-    eltype::Type,
-    axs::Tuple{Vararg{AbstractIndex}}
-   ) where {A<:AbstractArray}
-    return IndicesArray(similar(A, eltype, map(length, axs)), _drop_empty(axs))
-end
-
-function Base.similar(
-    ::Type{A},
-    axs::Tuple{Vararg{AbstractIndex}}
-   ) where {A<:AbstractArray}
-    return IndicesArray(similar(A, map(length, axs)), _drop_empty(axs))
-end
+###
+### Utilities
+###
+_catch_empty(x::Tuple) = x
+_catch_empty(x::NamedTuple) = x
+_catch_empty(::Tuple{}) = nothing
+_catch_empty(::NamedTuple{(),Tuple{}}) = nothing

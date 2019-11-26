@@ -15,9 +15,28 @@ function Base.pop!(a::IndicesVector)
     return pop!(parent(a))
 end
 
+function StaticRanges.pop(a::IndicesVector)
+    return IndicesArray(
+        pop(parent(a)),
+        (pop(axes(a, 1)),),
+        AllUnique,
+        LengthChecked
+       )
+end
+
 function Base.popfirst!(a::IndicesVector)
     popfirst!(axes(a, 1))
     return popfirst!(parent(a))
 end
+
+function StaticRanges.popfirst(a::IndicesVector)
+    return IndicesArray(
+        popfirst(parent(a)),
+        (popfirst(axes(a, 1)),),
+        AllUnique,
+        LengthChecked
+       )
+end
+
 
 # TODO pop!(collection, key)

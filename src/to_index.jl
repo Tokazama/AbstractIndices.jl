@@ -79,14 +79,20 @@ end
 """
     unsafe_reindex()
 """
-function unsafe_reindex(a::AbstractIndex, inds::AbstractUnitRange)
-    return similar_type(a)(@inbounds(keys(a)[inds]), _reindex(values(a), inds))
+function unsafe_reindex(a::AbstractIndex, inds::AbstractRange)
+    return similar_type(a)(
+        @inbounds(keys(a)[inds]),
+        _reindex(values(a), inds),
+        AllUnique,
+        LengthChecked
+       )
 end
 
-_reindex(a::OneTo{T}, inds::AbstractUnitRange) where {T} = OneTo{T}(length(inds))
-_reindex(a::OneToMRange{T}, inds::AbstractUnitRange) where {T} = OneToMRange{T}(length(inds))
-_reindex(a::OneToSRange{T}, inds::AbstractUnitRange) where {T} = OneToSRange{T}(length(inds))
+_reindex(a::OneTo{T}, inds::AbstractRange) where {T} = OneTo{T}(length(inds))
+_reindex(a::OneToMRange{T}, inds::AbstractRange) where {T} = OneToMRange{T}(length(inds))
+_reindex(a::OneToSRange{T}, inds::AbstractRange) where {T} = OneToSRange{T}(length(inds))
 
-_reindex(a::UnitRange{T}, inds::AbstractUnitRange) where {T} = UnitRange{T}(first(a), first(a) + length(inds) - 1)
-_reindex(a::UnitMRange{T}, inds::AbstractUnitRange) where {T} = UnitMRange{T}(first(a), first(a) + length(inds) - 1)
-_reindex(a::UnitSRange{T}, inds::AbstractUnitRange) where {T} = UnitSRange{T}(first(a), first(a) + length(inds) - 1)
+_reindex(a::UnitRange{T}, inds::AbstractRange) where {T} = UnitRange{T}(first(a), first(a) + length(inds) - 1)
+_reindex(a::UnitMRange{T}, inds::AbstractRange) where {T} = UnitMRange{T}(first(a), first(a) + length(inds) - 1)
+_reindex(a::UnitSRange{T}, inds::AbstractRange) where {T} = UnitSRange{T}(first(a), first(a) + length(inds) - 1)
+

@@ -13,8 +13,17 @@ reduce_indices(a; dims) = reduce_indices(a, dims)
 reduce_indices(a, dims) = _reduce_indices(axes(a), dims)
 _reduce_indices(axs::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduce_indices(axs, (dims,))
 function _reduce_indices(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D}
-    Tuple(map(i->ifelse(in(i, dims), reduce_axis(axs[i]), axs[i]), 1:D))
+    Tuple(map(i->ifelse(in(i, dims), reduce_index(axs[i]), axs[i]), 1:D))
 end
+
+"""
+    reduce_index(a)
+
+Reduces axis `a` to single value. Allows custom index types to have custom
+behavior throughout reduction methods (e.g., sum, prod, etc.)
+"""
+reduce_index(a::AbstractIndex) where {T} = unsafe_reindex(a, 1:1)
+
 
 
 _maybe_array_reduce(a, axs::Tuple) = IndicesArray(a, axs, AllUnique)

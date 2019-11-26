@@ -12,4 +12,16 @@ _reshape_indices(axs::Tuple{}, dims::Tuple{}) = ()
 """
     reshape_index(a, len)
 """
-reshape_index(a::AbstractUnitRange, len::Integer) = set_length(a, len)
+function reshape_index(axs, i::Int)
+    if length(axs) == i
+        return copy(axs)
+    elseif length(axs) > i
+        return shrink_last(axs, i)
+    elseif length(axs) < i
+        return grow_last(axs, i)
+    end
+end
+
+Base.reshape(a::IndicesArray, dims) = _reshape(a, to_dims(a, dims))
+_reshape(a, d) = IndicesArray(reshape(parent(a), d), reshape_indices(a, d))
+

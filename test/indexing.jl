@@ -7,11 +7,11 @@
     r2 = ["a", "b", "c", "d"]
     r3 = 2:4
 
-    ind1 = asindex(r1)
-    ind2 = asindex(r2)
-    ind3 = asindex(r3)
+    ind1 = Index(r1)
+    ind2 = Index(r2)
+    ind3 = Index(r3)
 
-    Aindices = IndicesArray(A, r1, r2, r3);
+    Aindices = IndicesArray(A, (r1, r2, r3));
     Anamed = IndicesArray(Aindices, (:a, :b, :c));
 
    # TODO ensure ind3 = 1 is out of bounds error
@@ -82,20 +82,20 @@
 
     @testset "NamedDimsExtra" begin
 
-        @testset "filteraxes" begin
-            @test filteraxes(allunique, A) == axes(A)
-            @test filteraxes(allunique, Anamed) == axes(Anamed)
-            @test length(filteraxes(allunique, A)) == ndims(A)
-            @test length(filteraxes(i -> length(i) == length(axes(A,1)), A)) == 1
+        @testset "filter_axes" begin
+            @test filter_axes(allunique, A) == axes(A)
+            @test filter_axes(allunique, Anamed) == axes(Anamed)
+            @test length(filter_axes(allunique, A)) == ndims(A)
+            @test length(filter_axes(i -> length(i) == length(axes(A,1)), A)) == 1
        end
 
-        @testset "findaxes" begin
-            @test findaxes(allunique, A) == ntuple(i->i, ndims(A))
-            @test findaxes(allunique, Anamed) == ntuple(i->i, ndims(A))
+        @testset "find_axes" begin
+            @test find_axes(allunique, A) == ntuple(i->i, ndims(A))
+            @test find_axes(allunique, Anamed) == ntuple(i->i, ndims(A))
 
-            @test length(findaxes(allunique, A)) == ndims(A)
-            @test findaxes(i -> i == axes(A,1), A) == (1,)
-            @test findaxes(i -> i == axes(Anamed,1), Anamed) == (1,)
+            @test length(find_axes(allunique, A)) == ndims(A)
+            @test find_axes(i -> i == axes(A,1), A) == (1,)
+            @test find_axes(i -> i == axes(Anamed,1), Anamed) == (1,)
         end
     end
 end
