@@ -62,10 +62,6 @@ Base.getindex(a::IndicesVector, i) = _unsafe_getindex(parent(a), (to_index(axes(
     return _unsafe_getindex(parent(a), to_indices(a, i))
 end
 
-@propagate_inbounds function Base.getindex(a::IndicesArray{T,N}, i...) where {T,N}
-    return _unsafe_getindex(parent(a), to_indices(a, i))
-end
-
 function _unsafe_getindex(a::AbstractArray, inds::NTuple{N,Int}) where {N}
     return @inbounds(getindex(a, inds...))
 end

@@ -61,15 +61,15 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "1085ffbf5fd48fdba64ef8e902ca429c4e1212d3"
+git-tree-sha1 = "5a3bcb6233adabde68ebc97be66e95dcb787424c"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "0.11.1"
+version = "0.12.1"
 
 [[StaticRanges]]
 deps = ["ArrayInterface", "StaticArrays"]
-git-tree-sha1 = "51c3f2eb6d99be13e89decca2c619d86bf3e6f8c"
+git-tree-sha1 = "6c36ecc6d5c13b006ff6872d1d99a61c447d8ecc"
 uuid = "d8176aec-3168-11e9-3c98-e3954798be3a"
-version = "0.3.1"
+version = "0.3.2"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
