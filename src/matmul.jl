@@ -15,8 +15,6 @@ matmul_indices(a::Tuple{Any},     b::Tuple{Any}    ) = ()
     end
 end
 
-inv_indices(a) = (axes(a, 2), axes(a, 1))
-
 
 for f in (:cor, :cov)
     @eval begin 
@@ -47,7 +45,6 @@ for (A,B,fa,fb) in ((:AbstractMatrix, :IndicesMatrix,  identity, parent),
     end
 end
 
-Base.inv(a::IndicesMatrix) = IndicesArray(inv(parent(a)), inv_indices(a))
 #Base.:*(a::IndicesVector, b::Adjoint{T,<:AbstractVector})
 
 for A in (Adjoint{<:Any, <:AbstractVector}, Transpose{<:Real, <:AbstractVector{<:Real}})

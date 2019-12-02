@@ -15,6 +15,7 @@ function _similar_type(
 end
 
 
+#=
 function Base.similar(
     a::IndicesArray{T},
     eltype::Type=T,
@@ -22,11 +23,12 @@ function Base.similar(
    ) where {T}
     return IndicesArray(similar(parent(a), eltype, map(length, axs)), _drop_empty(axs))
 end
+=#
 
 function Base.similar(
     a::AbstractArray{T},
     eltype::Type,
-    axs::Tuple{Vararg{AbstractIndex}}
+    axs::Tuple{Vararg{<:AbstractIndex}}
    ) where {T}
     return IndicesArray(similar(a, eltype, map(length, axs)), _drop_empty(axs))
 end
@@ -34,14 +36,14 @@ end
 function Base.similar(
     ::Type{A},
     eltype::Type,
-    axs::Tuple{Vararg{AbstractIndex}}
+    axs::Tuple{Vararg{<:AbstractIndex}}
    ) where {A<:AbstractArray}
     return IndicesArray(similar(A, eltype, map(length, axs)), _drop_empty(axs))
 end
 
 function Base.similar(
     ::Type{A},
-    axs::Tuple{Vararg{AbstractIndex}}
+    axs::Tuple{Vararg{<:AbstractIndex}}
    ) where {A<:AbstractArray}
     return IndicesArray(similar(A, map(length, axs)), _drop_empty(axs))
 end

@@ -67,7 +67,6 @@ include("iterate.jl")
 include("mutate.jl")
 
 include("setindex.jl")
-
 =#
 
 include("abstractindex.jl")
@@ -81,11 +80,13 @@ include("checkbounds.jl")
 
 include("to_index.jl")
 include("to_indices.jl")
+include("to_dims.jl")
 include("getindex.jl")
 
-
+include("combine.jl")
 include("operators.jl")
 include("matmul.jl")
+include("inv.jl")
 include("push.jl")
 include("pop.jl")
 include("reduce.jl")

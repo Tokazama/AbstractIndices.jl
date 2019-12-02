@@ -67,9 +67,9 @@ version = "0.12.1"
 
 [[StaticRanges]]
 deps = ["ArrayInterface", "StaticArrays"]
-git-tree-sha1 = "6c36ecc6d5c13b006ff6872d1d99a61c447d8ecc"
+git-tree-sha1 = "c322624ba876713eecc0cd04e999b3850a22fbf8"
 uuid = "d8176aec-3168-11e9-3c98-e3954798be3a"
-version = "0.3.2"
+version = "0.3.3"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]

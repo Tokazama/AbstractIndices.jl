@@ -54,7 +54,7 @@ function IndicesArray(x::AbstractArray{T,N}; kwargs...) where {T,N}
     if isempty(kwargs)
         return IndicesArray(x, axes(x), AllUnique, LengthChecked)
     else
-        return IndicesArray(x, Tuple([Index{v}(k) for (k,v) in kwargs]))
+        return IndicesArray(x, Tuple([Index{k}(v) for (k,v) in kwargs]))
     end
 end
 
@@ -145,13 +145,6 @@ Base.parent(x::IndicesArray) = getfield(x, :_parent)
 
 Base.axes(x::IndicesArray) = getfield(x, :_indices)
 
-function to_dim(a::IndicesArray{T,N}, i::Int) where {T,N}
-    @boundscheck if i < 1 || i > N
-        throw(BoundsError(axes(a), i))
-    end
-    return i
-end
-
 @propagate_inbounds Base.axes(a::IndicesArray, i) = unsafe_axes(axes(a), to_dim(a, i))
 unsafe_axes(axs::Tuple, idx) = @inbounds(getindex(axs, idx))
 
@@ -215,22 +208,6 @@ function Base.empty!(a::IndicesArray)
     empty!(axes(a, 1))
     empty!(parent(a))
     return a
-end
-
-# `sort` and `sort!` don't change the index, just as it wouldn't on a normal vector
-# TODO cusmum!, cumprod! tests
-# 1 Arg - no default for `dims` keyword
-for (mod, funs) in ((:Base, (:cumsum, :cumprod, :sort, :sort!)),)
-    for fun in funs
-        @eval function $mod.$fun(a::IndicesArray; dims, kwargs...)
-            return IndicesArray($mod.$fun(parent(a), dims=dims, kwargs...), axes(a))
-        end
-
-        # Vector case
-        @eval function $mod.$fun(a::IndicesVector; kwargs...)
-            return IndicesArray($mod.$fun(parent(a); kwargs...), axes(a))
-        end
-    end
 end
 
 ###

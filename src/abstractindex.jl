@@ -66,10 +66,12 @@ function StaticRanges.can_set_length(::Type{T}) where {T<:AbstractIndex}
     return can_set_length(values_type(T)) & can_set_length(keys_type(T))
 end
 
-# FIXME
-Base.Slice(a::AbstractIndex) = x
 
-for (f) in (:(==), :\, :isequal)
+
+# FIXME
+#Base.Slice(a::AbstractIndex) = x
+
+for (f) in (:(==), :isequal)
     @eval begin
         Base.$(f)(a::AbstractIndex, b::AbstractIndex) = $(f)(values(a), values(b))
         Base.$(f)(a::AbstractIndex, b::AbstractVector) = $(f)(values(a), b)
@@ -99,42 +101,11 @@ for f in (:+, :-)
     end
 end
 
-
-
-function set_length!(a::AbstractIndex, len::Int)
+function StaticRanges.set_length!(a::AbstractIndex, len::Int)
     can_set_length(a) || error("Cannot use set_length! for instances of typeof $(typeof(x)).")
     set_length!(keys(a), len)
     set_length!(values(a), len)
     return a
-end
-
-"""
-    index_keys_type(values)
-
-Returns the appropriate keys type for an index given the values. If `values` is
-already and `AbstractIndex` then it returns the same as `keys_type`.
-
-```
-julia> index_keys_type(1:10)
-Base.OneTo(10)
-
-julia> index_keys_type(mrange(1, 10))
-OneToMRange(10)
-
-julia> index_keys_type(srange(1, 10))
-OneToSRange(10)
-```
-"""
-index_keys_type(::T) where {T<:AbstractIndex} = keys_type(T)
-index_keys_type(::T) where {T} = index_keys_type(T)
-function index_keys_type(::Type{T}) where {T<:AbstractUnitRange}
-    if is_static(T)
-        return OneToSRange{Int}
-    elseif is_fixed(T)
-        return OneTo{Int}
-    else
-        return OneToMRange{Int}
-    end
 end
 
 #StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
