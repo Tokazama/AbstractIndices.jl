@@ -51,11 +51,6 @@ function combine_keys(::Type{T}, x, y) where {T<:Union{StepRangeLen,AbstractStep
 end
 combine_keys(::Type{T}, x, y) where {T<:AbstractVector} = copy(x)
 
-combine_names(::AbstractIndex{name1}, ::AbstractIndex{name2}) where {name1,name2} = Symbol("combine($name1,$name2)")
-combine_names(::AbstractIndex{nothing}, ::AbstractIndex{name2}) where {name2} = name2
-combine_names(::AbstractIndex{name1}, ::AbstractIndex{nothing}) where {name1} = name1
-combine_names(::AbstractIndex{nothing}, ::AbstractIndex{nothing}) = nothing
-
 ###
 ### vcat_indices
 ###

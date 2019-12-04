@@ -23,13 +23,8 @@ function _to_dim(axs::Tuple{Vararg{Any,N}}, d::Symbol) where {N}
 end
 _match_names(::AbstractIndex{name}, n::Symbol) where {name} = name === n
 
-
 to_dims(a::AbstractArray, dims) = to_dims(axes(a), (dims,))
 to_dims(a::AbstractArray{T,N}, dims::Colon) where {T,N} = ntuple(i -> i, Val(N))
-
-
-
 to_dims(a::AbstractArray, dims::Tuple) = to_dims(axes(a), dims)
-
 to_dims(axs::Tuple, dims::Tuple) = map(d_i -> to_dim(axs, d_i), dims)
 

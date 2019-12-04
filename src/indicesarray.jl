@@ -146,6 +146,7 @@ Base.parent(x::IndicesArray) = getfield(x, :_parent)
 Base.axes(x::IndicesArray) = getfield(x, :_indices)
 
 @propagate_inbounds Base.axes(a::IndicesArray, i) = unsafe_axes(axes(a), to_dim(a, i))
+@propagate_inbounds Base.axes(a::IndicesArray, i::Int) = unsafe_axes(axes(a), i)
 unsafe_axes(axs::Tuple, idx) = @inbounds(getindex(axs, idx))
 
 @propagate_inbounds Base.size(a::IndicesArray, i) = length(axes(a, i))

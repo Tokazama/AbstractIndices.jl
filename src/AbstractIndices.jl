@@ -46,6 +46,9 @@ export AbstractIndex,
        # methods
        find_axes,
        filter_axes,
+       dimnames,
+       to_dims,
+       to_dim,
        # reexports
        mrange,
        srange,
@@ -80,7 +83,7 @@ include("checkbounds.jl")
 
 include("to_index.jl")
 include("to_indices.jl")
-include("to_dims.jl")
+include("names.jl")
 include("getindex.jl")
 
 include("combine.jl")

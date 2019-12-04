@@ -108,6 +108,31 @@ function StaticRanges.set_length!(a::AbstractIndex, len::Int)
     return a
 end
 
+struct ByKeyTrait end
+const ByKey = ByKeyTrait()
+
+struct ByValueTrait end
+const ByValue = ByValueTrait()
+
+"""
+    index_by(a::AbstractIndex, i)
+
+Returns `ByKey` if the index of `i` should be identified by searching the keys
+and returns `ByValue` if the index of `i` should be identified directly from the
+values.
+"""
+index_by(a::AbstractIndex{name,K}, i::Function) where {name,K} = ByKey
+
+index_by(a::AbstractIndex{name,K}, i::K) where {name,K} = ByKey
+index_by(a::AbstractIndex{name,K}, i::AbstractVector{K}) where {name,K} = ByKey
+
+index_by(a::AbstractIndex{name,K}, i::K) where {name,K<:Integer} = ByKey
+index_by(a::AbstractIndex{name,K}, i::AbstractVector{K}) where {name,K<:Integer} = ByKey
+
+index_by(a::AbstractIndex{name,K}, i::I) where {name,K,I<:Integer} = ByValue
+index_by(a::AbstractIndex{name,K}, i::AbstractVector{I}) where {name,K,I<:Integer} = ByValue
+
+
 #StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
 
 const OneToIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,OneTo{V}}
@@ -121,3 +146,8 @@ const OffsetIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitRange{V}}
 const OffsetMIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitMRange{V}}
 
 const OffsetSIndex{name,K,V,Ks,F,L} = AbstractIndex{name,K,V,Ks,UnitSRange{V,F,L}}
+
+function Base.show(io::IO, idx::I) where {I<:AbstractIndex}
+    print(io, "$(I.name)($(keys(idx)))")
+end
+

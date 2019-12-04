@@ -1,3 +1,49 @@
+@inline @propagate_inbounds function Base.to_index(a::AbstractIndex, i)
+    return _to_index(index_by(a, i), a, i)
+end
+
+# _to_index
+# TODO find_all should be filter where possible
+@propagate_inbounds function _to_index(b::ByKeyTrait, a, i::Function)
+    return __to_index(a, i, find_all(i, keys(a)))
+end
+@propagate_inbounds function _to_index(b::ByKeyTrait, a, i::AbstractVector)
+    return __to_index(a, i, find_all(in(i), keys(a)))
+end
+@propagate_inbounds function _to_index(b::ByKeyTrait, a, i)
+    return __to_index(a, i, find_first(==(i), keys(a)))
+end
+@propagate_inbounds function _to_index(b::ByValueTrait, a, i::Function)
+    return __to_index(a, i, find_all(i, values(a)))
+end
+@propagate_inbounds function _to_index(b::ByValueTrait, a, i)
+    @boundscheck if !checkindex(Bool, values(a), i)
+        throw(BoundsError(a, i))
+    end
+    return @inbounds getindex(values(a), i)
+end
+@propagate_inbounds function _to_index(b::ByValueTrait, a, i::AbstractVector)
+    @boundscheck if !checkindex(Bool, values(a), i)
+        throw(BoundsError(a, i))
+    end
+    return @inbounds unsafe_reindex(a, i)
+end
+
+# __to_index
+@propagate_inbounds function __to_index(a, i, idx::T) where {T<:Union{Integer,Nothing}}
+    @boundscheck if T <: Nothing
+        throw(BoundsError(a, i))
+    end
+    return @inbounds getindex(values(a), idx)
+end
+@propagate_inbounds function __to_index(a, i, idx::AbstractVector{T}) where {T<:Union{Integer,Nothing}}
+    @boundscheck if !(T<:Integer)
+        throw(BoundsError(a, i))
+    end
+    return unsafe_reindex(a, idx)
+end
+
+#=
 @propagate_inbounds function Base.to_index(
     a::AbstractIndex{name,K},
     f::Function
@@ -64,10 +110,8 @@ end
 
 _to_index(a, i, inds::Integer) = inds
 _to_index(a, i, inds::AbstractVector{T}) where {T<:Integer} = unsafe_reindex(a, inds)
-_to_index(a, i, inds::AbstractVector{T}) where {T<:Union{Any,Nothing}} =  BoundsError(a, i)
-_to_index(a, i, inds::Nothing) = BoundsError(a, i)
 
-
+=#
 """
     reindex()
 """
