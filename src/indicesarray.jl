@@ -26,7 +26,7 @@ function IndicesArray(
 end
 
 function IndicesArray(p::AbstractArray{T,N}, axs::Tuple{Vararg{<:Union{Symbol,Nothing},N}}) where {T,N}
-    IndicesArray{T,N,typeof(p)}(p, indices(p, axs), AllUnique, LengthChecked)
+    return IndicesArray{T,N,typeof(p)}(p, indices(p, axs), AllUnique, LengthChecked)
 end
 
 function IndicesArray(
@@ -52,7 +52,7 @@ end
 
 function IndicesArray(x::AbstractArray{T,N}; kwargs...) where {T,N}
     if isempty(kwargs)
-        return IndicesArray(x, axes(x), AllUnique, LengthChecked)
+        return IndicesArray(x, indices(x), AllUnique, LengthChecked)
     else
         return IndicesArray(x, Tuple([Index{k}(v) for (k,v) in kwargs]))
     end
@@ -68,7 +68,6 @@ function _process_index(a, i::AbstractIndex, uc, lc)
     check_index_length(a, i, lc)
     return i
 end
-
 
 """
     indices(x) -> Tuple
@@ -177,33 +176,6 @@ function _filter_axes(f, t::Tuple)
     end
 end
 _filter_axes(f, ::Tuple{}) = ()
-
-"""
-    find_axes(f, x)
-
-Returns a tuple of indices for which the axes of `x` are true under `f`. If `x`
-has named dimensions this is a tuple of symbols. Otherwise, a tuple of integers
-is returned. If all axes return false under the conditions of `f` then
-`nothing` is returned.
-"""
-find_axes(f::Function, a) = _find_axes(f, axes(a), 1)
-function _find_axes(f::Function, axs::Tuple{Any,Vararg{Any}}, cnt::Int)
-    if f(first(axs))
-        return (cnt, _find_axes(f, tail(axs), cnt+1)...)
-    else
-        return _find_axes(f, tail(axs), cnt+1)
-    end
-end
-_find_axes(f, ::Tuple{}, ::Int) = ()
-
-###
-### setindex!
-###
-@propagate_inbounds function Base.setindex!(a::IndicesArray, X, inds...)
-    return unsafe_setindex!(parent(a), X, to_indices(axes(a), inds))
-end
-
-unsafe_setindex!(a, X, inds::Tuple) = @inbounds(setindex!(a, X, inds...))
 
 function Base.empty!(a::IndicesArray)
     empty!(axes(a, 1))
