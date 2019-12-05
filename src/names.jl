@@ -1,4 +1,3 @@
-
 dimnames(::AbstractIndex{name}) where {name} = name
 dimnames(::AbstractUnitRange) = nothing
 dimnames(x::AbstractArray) = dimnames(axes(x))
@@ -18,23 +17,21 @@ combine_names(::Nothing, ::Nothing) = nothing
 """
     to_dims(a, names) -> NTuple{N,Int}
 """
-@inline to_dims(a, names::Tuple{Any,Vararg}) = (to_dim(a, first(names)), to_dims(a, tail(names))...)
-to_dims(a, names::Tuple{}) = ()
+@inline function to_dims(a::AbstractArray, names::Tuple{Any,Vararg})
+    return (to_dims(a, first(names)), to_dims(a, tail(names))...)
+end
+to_dims(a::AbstractArray, names::Tuple{}) = ()
 
-
-"""
-    to_dim(a, name) -> Int
-"""
-to_dim(a::AbstractArray, d::Union{Int,Colon}) = d
-to_dim(a::AbstractArray, d::Integer) = Int(d)
-@inline function to_dim(a::AbstractArray{T,N}, name::Symbol) where {T,N}
+to_dims(a::AbstractArray, d::Union{Int,Colon}) = d
+to_dims(a::AbstractArray, d::Integer) = Int(d)
+@inline function to_dims(a::AbstractArray{T,N}, name::Symbol) where {T,N}
     for i in 1:N
         dimnames(a, i) === name && return i
     end
     return 0
 end
 
-function to_dim(dnames::Tuple, name::Symbol)::Int
+function to_dims(dnames::Tuple, name::Symbol)::Int
     dimnum = _to_dim(dnames, name)
     if dimnum === 0
         throw(ArgumentError(
@@ -43,8 +40,8 @@ function to_dim(dnames::Tuple, name::Symbol)::Int
     end
     return dimnum
 end
-to_dim(dnames::Tuple, d::Union{Int,Colon}) = d
-to_dim(dnames::Tuple, d::Integer) = Int(d)
+to_dims(dnames::Tuple, d::Union{Int,Colon}) = d
+to_dims(dnames::Tuple, d::Integer) = Int(d)
 
 function _to_dim(dnames::NTuple{N}, name::Symbol) where N
     for ii in 1:N

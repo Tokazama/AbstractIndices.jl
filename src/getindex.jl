@@ -98,4 +98,3 @@ end
 _drop_empty(x::Tuple{Any,Vararg}) = (first(x), _drop_empty(tail(x))...)
 _drop_empty(x::Tuple{<:Integer,Vararg}) = _drop_empty(tail(x))
 _drop_empty(x::Tuple{}) = ()
-

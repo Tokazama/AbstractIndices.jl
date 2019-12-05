@@ -218,3 +218,5 @@ _catch_empty(x::Tuple) = x
 _catch_empty(x::NamedTuple) = x
 _catch_empty(::Tuple{}) = nothing
 _catch_empty(::NamedTuple{(),Tuple{}}) = nothing
+
+StaticRanges.Size(::Type{<:IndicesArray{T,N,P,I}}) where {T,N,P,I} = StaticRanges._Size(I)

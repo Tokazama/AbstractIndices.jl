@@ -1,3 +1,4 @@
+using AbstractIndices: combine
 
 @testset "AbstractIndex" begin
     float_offset = Index(2.0:11.0)
@@ -67,4 +68,21 @@
         @test asindex(ks, nothing) = asindex(symbol_index, :a)
     end
     =#
+    x = Index{:a}(1:10)
+    y = Index(1:10)
+    z = Index{:b}(1:10)
+    @testset "combine" begin
+        @test 0 == @allocated combine_names(x, y)
+        @test combine_names(x, y) == :a
+        @test 0 == @allocated combine_names(y, x)
+        @test combine_names(y, x) == :a
+
+        @test 0 == @allocated combine_names(x, y)
+        @test combine_names(x, z) == :a
+        @test 0 == @allocated combine_names(y, x)
+        @test combine_names(z, x) == :b
+
+        @test combine_values(x, y) == OneTo(10)
+        @test combine_keys(x, y) == 1:10
+    end
 end

@@ -89,9 +89,9 @@ function Index(
     return Index{indnames(ks)}(keys(ks), vs, uc, lc)
 end
 
-function Index{name1,K,V,Ks,Vs}(idx::Index) where {name1,name2,K,V,Ks,Vs}
-    return Index{}()
-end
+#function Index{name1,K,V,Ks,Vs}(idx::Index) where {name1,name2,K,V,Ks,Vs}
+#    return Index{}()
+#end
 
 Index(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
 
@@ -140,3 +140,12 @@ end
 
 # TODO: is this the best fall back for and AbstractIndex?
 AbstractIndex(x) = Index(x)
+
+
+function Base.show(io::IO, idx::Index)
+    if isnothing(dimnames(idx))
+        print(io, "Index($(keys(idx)))")
+    else
+        print(io, "Index{$(dimnames(idx))}($(keys(idx)))")
+    end
+end

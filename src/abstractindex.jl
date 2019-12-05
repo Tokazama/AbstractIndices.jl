@@ -146,8 +146,3 @@ const OffsetIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitRange{V}}
 const OffsetMIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitMRange{V}}
 
 const OffsetSIndex{name,K,V,Ks,F,L} = AbstractIndex{name,K,V,Ks,UnitSRange{V,F,L}}
-
-function Base.show(io::IO, idx::I) where {I<:AbstractIndex}
-    print(io, "$(I.name)($(keys(idx)))")
-end
-

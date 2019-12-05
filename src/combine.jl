@@ -14,7 +14,9 @@ combine_indices(x::Tuple{}, y::Tuple{}) = ()
 """
     combine(x, y)
 """
-combine(x::Index, y::Index) = Index(combine_keys(x, y), combine_values(x, y))
+function combine(x::Index, y::Index)
+    return Index{combine_names(x, y)}(combine_keys(x, y), combine_values(x, y))
+end
 function combine(x::AbstractIndex, y::AbstractIndex)
     error("`combine` must be defined for new subtypes of AbstractIndex.")
 end

@@ -139,4 +139,3 @@ _reindex(a::OneToSRange{T}, inds) where {T} = OneToSRange{T}(length(inds))
 _reindex(a::UnitRange{T}, inds) where {T} = UnitRange{T}(first(a), first(a) + length(inds) - 1)
 _reindex(a::UnitMRange{T}, inds) where {T} = UnitMRange{T}(first(a), first(a) + length(inds) - 1)
 _reindex(a::UnitSRange{T}, inds) where {T} = UnitSRange{T}(first(a), first(a) + length(inds) - 1)
-
