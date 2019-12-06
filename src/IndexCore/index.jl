@@ -12,6 +12,9 @@ struct Index{name,K,V,Ks,Vs} <: AbstractIndex{name,K,V,Ks,Vs}
     end
 end
 
+###
+### Constructors
+###
 function Index{name,K,V,Ks,Vs}(
     ks::Ks2,
     vs::Vs2,
@@ -95,9 +98,14 @@ end
 
 Index(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
 
+###
+### Interface
+###
 Base.keys(idx::Index) = getfield(idx, :_keys)
 
 Base.values(idx::Index) = getfield(idx, :_values)
+
+unname(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
 
 function StaticRanges.similar_type(
     idx::Index{name},
@@ -148,4 +156,19 @@ function Base.show(io::IO, idx::Index)
     else
         print(io, "Index{$(dimnames(idx))}($(keys(idx)))")
     end
+end
+
+###
+### pop
+###
+function Base.pop!(a::AbstractIndex)
+    can_set_last(a) || error("Cannot change size of index of type $(typeof(a)).")
+    pop!(keys(a))
+    return pop!(values(a))
+end
+
+function Base.popfirst!(a::AbstractIndex)
+    can_set_first(a) || error("Cannot change size of index of type $(typeof(a)).")
+    popfirst!(keys(a))
+    return popfirst!(values(a))
 end

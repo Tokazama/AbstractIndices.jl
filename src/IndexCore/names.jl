@@ -15,7 +15,8 @@ combine_names(a::Symbol, ::Nothing) = a
 combine_names(::Nothing, ::Nothing) = nothing
 
 """
-    to_dims(a, names) -> NTuple{N,Int}
+    to_dims(a, names::Tuple) -> NTuple{N,Int}
+    to_dims(a, names) -> Int
 """
 @inline function to_dims(a::AbstractArray, names::Tuple{Any,Vararg})
     return (to_dims(a, first(names)), to_dims(a, tail(names))...)
@@ -49,3 +50,15 @@ function _to_dim(dnames::NTuple{N}, name::Symbol) where N
     end
     return 0
 end
+
+"""
+    unname(x)
+
+Remove the name from a `x`. If `x` doesn't have a name the same instance of `x`
+is returned.
+"""
+unname(x) = x
+unname(nt::NamedTuple{names}) where {names} = Tuple(nt)
+unname(x::Tuple) = unname.(x)
+
+

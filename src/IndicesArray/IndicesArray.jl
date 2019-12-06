@@ -161,28 +161,6 @@ Base.parentindices(x::IndicesArray) = axes(parent(x))
 parent_type(::T) where {T<:AbstractArray} = axes_type(T)
 parent_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = P
 
-"""
-    filter_axes(f, a)
-
-Return the axes of `a`, removing those for which `f` is false. The function `f`
-is passed one argument.
-"""
-filter_axes(f::Function, x::AbstractArray) = _catch_empty(_filter_axes(f, axes(x)))
-function _filter_axes(f, t::Tuple)
-    if f(first(t))
-        return (first(t), _filter_axes(f, tail(t))...)
-    else
-        return _filter_axes(f, tail(t))
-    end
-end
-_filter_axes(f, ::Tuple{}) = ()
-
-function Base.empty!(a::IndicesArray)
-    empty!(axes(a, 1))
-    empty!(parent(a))
-    return a
-end
-
 ###
 ### Utilities
 ###

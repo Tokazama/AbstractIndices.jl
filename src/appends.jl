@@ -39,5 +39,3 @@ function _append_keys!(::DiscreteTrait, a::AbstractVector{T}, ::ContinuousTrait,
         end
     end
 end
-
-

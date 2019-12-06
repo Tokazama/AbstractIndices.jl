@@ -12,6 +12,7 @@ include("abstractindex_tests.jl")
 include("broadcasting.jl")
 #include("indicesarray_tests.jl")
 include("reduce_tests.jl")
+include("pop_tests.jl")
 
 
 #=

@@ -6,6 +6,13 @@ Base.@propagate_inbounds function Base.setindex!(
     setindex!(A, to_indices(A, i))
 end
 
+@propagate_inbounds function Base.setindex!(a::IndicesArray, X, inds...)
+    return unsafe_setindex!(parent(a), X, to_indices(axes(a), inds))
+end
+
+unsafe_setindex!(a, X, inds::Tuple) = @inbounds(setindex!(a, X, inds...))
+
+#=
 # Base.@propagate_inbounds function Base.setindex!(A::IndicesArray) end
 
 for f in (:getindex, :view, :dotview)
@@ -44,3 +51,4 @@ end
 @propagate_inbounds function Base.setindex!(a::NamedDimsArray, value, inds...)
     return setindex!(parent(a), value, inds...)
 end
+=#

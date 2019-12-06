@@ -1,6 +1,6 @@
 #### SubIndex of Index. Used by SubDataFrame, DataFrameRow, and DataFrameRows
 
-struct SubIndex{I<:AbstractIndex,S<:AbstractVector{Int},T<:AbstractVector{Int}} <: AbstractIndex
+struct SubIndex{I<:AbstractIndex,S<:AbstractVector{Int},T<:AbstractVector{Int}} <: AbstractIndex{}
     parent::I
     cols::S # columns from idx selected in SubIndex
     remap::T # reverse mapping from cols to their position in the SubIndex

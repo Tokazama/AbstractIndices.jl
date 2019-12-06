@@ -26,7 +26,10 @@ function _sub2ind_recurse(axs, L, idx, inds::Tuple)
     @_inline_meta
     r1 = first(axs)
     i = to_index(first(axs), )
-    _sub2ind_recurse(tail(axs), nextL(L, r1), ind + offsetin(i, r1) * L, first(I), tail(inds))
+    _sub2ind_recurse(tail(axs), nextL(L, r1),
+                     ind + offsetin(i, r1) * L,
+                     first(I), tail(inds)
+                    )
 end
 
 # Vectorized forms

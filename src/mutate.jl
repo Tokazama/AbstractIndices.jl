@@ -1,9 +1,3 @@
-function Base.empty!(a::AbstractIndicesArray)
-    empty!(axes(a, 1))
-    empty!(parent(a))
-    return a
-end
-
 # `sort` and `sort!` don't change the index, just as it wouldn't on a normal vector
 # TODO cusmum!, cumprod! tests
 # 1 Arg - no default for `dims` keyword

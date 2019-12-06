@@ -8,11 +8,17 @@ abstract type AbstractIndex{name,K,V<:Integer,Ks<:AbstractVector{K},Vs<:Abstract
 
 Base.valtype(::Type{<:AbstractIndex{name,K,V,Ks,Vs}}) where {name,K,V,Ks,Vs} = V
 
+"""
+    values_type(::AbstractIndex)
+"""
 values_type(::T) where {T} = values_type(T)
 values_type(::Type{<:AbstractIndex{name,K,V,Ks,Vs}}) where {name,K,V,Ks,Vs} = Vs
 
 Base.keytype(::Type{<:AbstractIndex{name,K}}) where {name,K} = K
 
+"""
+    keys_type(::AbstractIndex)
+"""
 keys_type(::T) where {T} = keys_type(T)
 keys_type(::Type{<:AbstractIndex{name,K,V,Ks,Vs}}) where {name,K,V,Ks,Vs} = Ks
 
@@ -66,8 +72,6 @@ function StaticRanges.can_set_length(::Type{T}) where {T<:AbstractIndex}
     return can_set_length(values_type(T)) & can_set_length(keys_type(T))
 end
 
-
-
 # FIXME
 #Base.Slice(a::AbstractIndex) = x
 
@@ -108,41 +112,5 @@ function StaticRanges.set_length!(a::AbstractIndex, len::Int)
     return a
 end
 
-struct ByKeyTrait end
-const ByKey = ByKeyTrait()
+StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
 
-struct ByValueTrait end
-const ByValue = ByValueTrait()
-
-"""
-    index_by(a::AbstractIndex, i)
-
-Returns `ByKey` if the index of `i` should be identified by searching the keys
-and returns `ByValue` if the index of `i` should be identified directly from the
-values.
-"""
-index_by(a::AbstractIndex{name,K}, i::Function) where {name,K} = ByKey
-
-index_by(a::AbstractIndex{name,K}, i::K) where {name,K} = ByKey
-index_by(a::AbstractIndex{name,K}, i::AbstractVector{K}) where {name,K} = ByKey
-
-index_by(a::AbstractIndex{name,K}, i::K) where {name,K<:Integer} = ByKey
-index_by(a::AbstractIndex{name,K}, i::AbstractVector{K}) where {name,K<:Integer} = ByKey
-
-index_by(a::AbstractIndex{name,K}, i::I) where {name,K,I<:Integer} = ByValue
-index_by(a::AbstractIndex{name,K}, i::AbstractVector{I}) where {name,K,I<:Integer} = ByValue
-
-
-#StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
-
-const OneToIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,OneTo{V}}
-
-const OneToMIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,OneToMRange{V}}
-
-const OneToSIndex{name,K,V,Ks,L} = AbstractIndex{name,K,V,Ks,OneToSRange{V,L}}
-
-const OffsetIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitRange{V}}
-
-const OffsetMIndex{name,K,V,Ks} = AbstractIndex{name,K,V,Ks,UnitMRange{V}}
-
-const OffsetSIndex{name,K,V,Ks,F,L} = AbstractIndex{name,K,V,Ks,UnitSRange{V,F,L}}

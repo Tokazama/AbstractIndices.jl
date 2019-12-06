@@ -55,7 +55,10 @@ export AbstractIndex,
        OneToSRange,
        OneToMRange,
        UnitMRange,
-       UnitSRange
+       UnitSRange,
+       pop,
+       popfirst
+
 
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
@@ -72,26 +75,21 @@ include("mutate.jl")
 include("setindex.jl")
 =#
 
-include("abstractindex.jl")
 include("param_checks.jl")
-include("index.jl")
-include("indicesarray.jl")
+
+include("IndexCore/IndexCore.jl")
+include("IndicesArray/IndicesArray.jl")
+
 include("similar.jl")
-include("promotion.jl")
 
 include("checkbounds.jl")
 
-include("to_index.jl")
 include("to_indices.jl")
-include("names.jl")
 include("getindex.jl")
 
-include("combine.jl")
 include("operators.jl")
 include("matmul.jl")
-include("inv.jl")
-include("push.jl")
-include("pop.jl")
+include("push_pop.jl")
 include("reduce.jl")
 include("permutedims.jl")
 include("dropdims.jl")

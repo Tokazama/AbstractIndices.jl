@@ -1,27 +1,9 @@
-matmul_indices(a, b) = _multiply_indices(axes(a), axes(b))
-matmul_indices(a::AbstractArray,  b::AbstractArray ) = matmul_indices(indices(a), indices(b))
-matmul_indices(a::Tuple{Any},     b::Tuple{Any,Any}) = (first(a), last(b))
-matmul_indices(a::Tuple{Any,Any}, b::Tuple{Any,Any}) = (first(a), last(b))
-matmul_indices(a::Tuple{Any,Any}, b::Tuple{Any}    ) = (first(a),)
-matmul_indices(a::Tuple{Any},     b::Tuple{Any}    ) = ()
-
-@inline function covcor_indices(a, dims::Int)
-    if dims === 1
-        return (axes(a, 2), axes(a, 2))
-    elseif dims === 2
-        return (axes(a, 1), axes(a, 1))
-    else
-        error("dims must be 1 or 2.")
-    end
-end
-
-
 for f in (:cor, :cov)
     @eval begin 
         function Statistics.$f(a::IndicesMatrix; dims=1, kwargs...)
-            return _maybe_indices_array(
+            return _maybe_axes_array(
                 Statistics.$f(parent(a); dims=dims, kwargs...),
-                covcor_indices(a, dims)
+                covcor_axes(a, dims)
                )
         end
 
@@ -40,7 +22,7 @@ for (A,B,fa,fb) in ((:AbstractMatrix, :IndicesMatrix,  identity, parent),
                     (:IndicesVector,  :IndicesMatrix,  parent,   parent))
     @eval begin
         function Base.:*(a::$A, b::$B)
-            _maybe_indices_array(*($(fa)(a), $(fb)(b)), matmul_indices(a, b))
+            _maybe_axes_array(*($(fa)(a), $(fb)(b)), matmul_axes(a, b))
         end
     end
 end
@@ -50,6 +32,8 @@ end
 for A in (Adjoint{<:Any, <:AbstractVector}, Transpose{<:Real, <:AbstractVector{<:Real}})
     @eval begin
         Base.:*(a::$A, b::IndicesVector) where {T,I} = *(a, parent(b))
-        Base.:*(b::IndicesVector, a::$A) where {T,I} = IndicesArray(*(parent(b), a), matmul_indices(b, a))
+        Base.:*(b::IndicesVector, a::$A) where {T,I} = IndicesArray(*(parent(b), a), matmul_axes(b, a))
     end
 end
+
+Base.inv(a::IndicesMatrix) = IndicesArray(inv(parent(a)), inv_axes(a))

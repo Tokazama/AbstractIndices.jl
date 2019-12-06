@@ -84,3 +84,34 @@ function _pushfirst(::DiscreteTrait, a, items::Pair...)
         LengthChecked
        )
 end
+
+###
+### pop
+###
+function Base.pop!(a::IndicesVector)
+    pop!(axes(a, 1))
+    return pop!(parent(a))
+end
+
+function StaticRanges.pop(a::IndicesVector)
+    return IndicesArray(
+        pop(parent(a)),
+        (pop(axes(a, 1)),),
+        AllUnique,
+        LengthChecked
+       )
+end
+
+function Base.popfirst!(a::IndicesVector)
+    popfirst!(axes(a, 1))
+    return popfirst!(parent(a))
+end
+
+function StaticRanges.popfirst(a::IndicesVector)
+    return IndicesArray(
+        popfirst(parent(a)),
+        (popfirst(axes(a, 1)),),
+        AllUnique,
+        LengthChecked
+       )
+end
