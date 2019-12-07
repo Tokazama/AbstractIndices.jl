@@ -105,7 +105,6 @@ Base.keys(idx::Index) = getfield(idx, :_keys)
 
 Base.values(idx::Index) = getfield(idx, :_values)
 
-unname(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
 
 function StaticRanges.similar_type(
     idx::Index{name},
@@ -152,9 +151,9 @@ AbstractIndex(x) = Index(x)
 
 function Base.show(io::IO, idx::Index)
     if isnothing(dimnames(idx))
-        print(io, "Index($(keys(idx)))")
+        print(io, "Index($(keys(idx)) => $(values(idx)))")
     else
-        print(io, "Index{$(dimnames(idx))}($(keys(idx)))")
+        print(io, "Index{$(dimnames(idx))}($(keys(idx)) => $(values(idx)))")
     end
 end
 

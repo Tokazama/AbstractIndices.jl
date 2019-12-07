@@ -1,3 +1,21 @@
+"""
+    dimnames(x)
+
+Returns a tuple of names for each dimension of `x`. If `x` is an `AbstractUnitRange`
+then a `Symbol` will be returned if it has a name and `nothing` will be returned
+if it doesn't.
+
+## Examples
+```
+julia> dimnames(Index{:a}(1:10))
+:a
+
+julia> dimnames(1:10)
+
+julia> dimnames((Index{:a}(1:10), 1:10)
+(:a, nothing)
+```
+"""
 dimnames(::AbstractIndex{name}) where {name} = name
 dimnames(::AbstractUnitRange) = nothing
 dimnames(x::AbstractArray) = dimnames(axes(x))
@@ -5,48 +23,50 @@ dimnames(x::AbstractArray, i::Int) = dimnames(axes(x, i))
 dimnames(x::Tuple{Any,Vararg}) = (dimnames(first(x)), dimnames(tail(x))...)
 dimnames(x::Tuple{}) = ()
 
-combine_names(a::Union{Symbol,Nothing}, b::AbstractIndex) = combine_names(a, dimnames(b))
-combine_names(a::AbstractIndex, b::Union{Symbol,Nothing}) = combine_names(dimnames(a), b)
-combine_names(a::AbstractIndex, b::AbstractIndex) = combine_names(dimnames(a), dimnames(b))
-
-combine_names(a::Symbol, b::Symbol) = a
-combine_names(::Nothing, b::Symbol) = b
-combine_names(a::Symbol, ::Nothing) = a
-combine_names(::Nothing, ::Nothing) = nothing
-
 """
-    to_dims(a, names::Tuple) -> NTuple{N,Int}
-    to_dims(a, names) -> Int
+    to_dims(a, dims::Tuple) -> NTuple{N,Int}
+    to_dims(a, dims) -> Int
+
+Given an array or tuple of indices `a` returns the dimensions corresponding to
+`dims` as `Int`. If `dims` is an integer this simply ensures that it is an `Int`
+or converted to one. If `dims` is a `Symbol` this returns the dimension corresponding
+to the provided name. If the named dimension is not present an error is returned.
+
+## Examples
+```
+julia> axs = (Index{:a}(1:10), Index{:b}(1:10), Index(1:10));
+
+julia> to_dims(axs, :a)
+1
+
+julia> to_dims(axs, :b)
+2
+
+julia> to_dims(axs, (:a, :b))
+(1, 2)
+```
 """
-@inline function to_dims(a::AbstractArray, names::Tuple{Any,Vararg})
-    return (to_dims(a, first(names)), to_dims(a, tail(names))...)
-end
-to_dims(a::AbstractArray, names::Tuple{}) = ()
+@inline to_dims(x::AbstractArray, d) = to_dims(axes(x), d)
+@inline to_dims(x::Tuple, d) = _to_dims(x, d)
 
-to_dims(a::AbstractArray, d::Union{Int,Colon}) = d
-to_dims(a::AbstractArray, d::Integer) = Int(d)
-@inline function to_dims(a::AbstractArray{T,N}, name::Symbol) where {T,N}
-    for i in 1:N
-        dimnames(a, i) === name && return i
-    end
-    return 0
-end
+_to_dims(x::Tuple, d::Tuple) = (_to_dims(x, first(d)), _to_dims(x, tail(d))...)
+_to_dims(x::Tuple, d::Tuple{}) = ()
+_to_dims(x::Tuple, d::Union{Int,Colon}) = d
+_to_dims(a::AbstractArray, d::Integer) = Int(d)
 
-function to_dims(dnames::Tuple, name::Symbol)::Int
-    dimnum = _to_dim(dnames, name)
+function _to_dims(x::Tuple, n::Symbol)::Int
+    dimnum = __to_dim(x, n)
     if dimnum === 0
         throw(ArgumentError(
-            "Specified name ($(repr(name))) does not match any dimension name ($dnames)"
+            "Specified name ($(repr(n))) does not match any dimension name ($x)"
         ))
     end
     return dimnum
 end
-to_dims(dnames::Tuple, d::Union{Int,Colon}) = d
-to_dims(dnames::Tuple, d::Integer) = Int(d)
 
-function _to_dim(dnames::NTuple{N}, name::Symbol) where N
+function __to_dim(axs::NTuple{N,Any}, name::Symbol) where N
     for ii in 1:N
-        getfield(dnames, ii) === name && return ii
+        dimnames(getfield(axs, ii)) === name && return ii
     end
     return 0
 end
@@ -56,9 +76,24 @@ end
 
 Remove the name from a `x`. If `x` doesn't have a name the same instance of `x`
 is returned.
+
+## Examples
+```
+julia> aidx, nidx, uidx, = Index{:a}(1:10), Index(1:10), 1:10
+
+julia> unname(aidx)
+Index(1:10)
+
+julia> unname(nidx)
+Index(1:10)
+
+julia> unname(uidx)
+1:10
+```
 """
-unname(x) = x
+unname(x) = copy(x)
 unname(nt::NamedTuple{names}) where {names} = Tuple(nt)
 unname(x::Tuple) = unname.(x)
-
+unname(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
+unname(idx::SimpleIndex) = SimpleIndex(keys(idx))
 

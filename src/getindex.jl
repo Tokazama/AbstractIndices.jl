@@ -15,59 +15,6 @@ end
 end
 =#
 
-@propagate_inbounds function Base.getindex(a::AbstractIndex, i::AbstractUnitRange{<:Integer})
-    return to_index(a, i)
-end
-@propagate_inbounds Base.getindex(a::AbstractIndex, i::Integer) = to_index(a, i)
-@propagate_inbounds Base.getindex(a::AbstractIndex, i) = to_index(a, i)
-
-
-#=
-function _getindex(a::AbstractIndex, inds::AbstractUnitRange{Integer})
-    return similar_type(a)(@inbounds(keys(a)[inds]), @inbounds(values(a)[inds]), AllUnique, true)
-end
-
-_getindex(a::AbstractIndex, inds::Integer) = @inbounds(getindex(values(a), inds))
-
-@propagate_inbounds function Base.getindex(
-    a::AbstractIndex{name,K},
-    i::AbstractVector{K}
-   ) where {name,K}
-    return _getindex(a, to_index(a, i))
-end
-@propagate_inbounds function Base.getindex(
-    a::AbstractIndex{name,K},
-    i::AbstractUnitRange{K}
-   ) where {name,K}
-    return _getindex(a, to_index(a, i))
-end
-
-for I in (Int,CartesianIndex{1})
-    @eval begin
-        # getindex
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,$I}, i::$I) where {name}
-            return _getindex(a, to_index(a, i))
-        end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,$I}, i::AbstractVector{$I}) where {name}
-            return _getindex(a, to_index(a, i))
-        end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,$I}, i::AbstractUnitRange{$I}) where {name}
-            return _getindex(a, to_index(a, i))
-        end
-
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::$I) where {name,K}
-            return _getindex(a, to_index(a, i))
-        end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::AbstractVector{$I}) where {name,K}
-            return _getindex(a, to_index(a, i))
-        end
-        @propagate_inbounds function Base.getindex(a::AbstractIndex{name,K}, i::AbstractUnitRange{$I}) where {name,K}
-            return _getindex(a, to_index(a, i))
-        end
-    end
-end
-=#
-
 ###
 ### IndicesArray
 ###

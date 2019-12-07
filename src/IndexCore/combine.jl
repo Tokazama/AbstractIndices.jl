@@ -1,28 +1,39 @@
-###
-### combine_indices
-###
 """
-    combine_indices
+    combine_indices(x, y)
+
+Returns the combined axes of `x` and `y` for broadcasting operations.
 """
+combine_indices(x::AbstractArray, y::AbstractArray) = combine_indices(axes(x), axes(y))
 function combine_indices(x::Tuple, y::Tuple)
-    return (combine(first(x), first(y)), combine_indices(tail(x), tail(y))...)
+    return (combine_index(first(x), first(y)), combine_indices(tail(x), tail(y))...)
 end
 combine_indices(x::Tuple{Any}, y::Tuple{}) = (first(x),)
 combine_indices(x::Tuple{}, y::Tuple{Any}) = (first(y),)
 combine_indices(x::Tuple{}, y::Tuple{}) = ()
 
 """
-    combine(x, y)
+    combine_index(x, y)
+
+Returns the combination of `x` and `y`, creating a new index. New subtypes of
+`AbstractIndex` should implement a `combine_index` method.
 """
-function combine(x::Index, y::Index)
+function combine_index(x::Index, y::Index)
     return Index{combine_names(x, y)}(combine_keys(x, y), combine_values(x, y))
 end
-function combine(x::AbstractIndex, y::AbstractIndex)
-    error("`combine` must be defined for new subtypes of AbstractIndex.")
+function combine_index(x::SimpleIndex, y::SimpleIndex)
+    return SimpleIndex{combine_names(x, y)}(combine_values(x, y))
+end
+function combine_index(x::AbstractIndex, y::AbstractIndex)
+    error("`combine_index` must be defined for new subtypes of AbstractIndex.")
 end
 
 """
-    combine_values(x::AbstractIndex, y::AbstractIndex)
+    combine_values(x, y)
+
+Returns the combination of the values of `x` and `y`, creating a new index. New
+subtypes of `AbstractIndex` may implement a unique `combine_values` method if 
+needed. Default behavior is to use the return of `promote_rule(x, y)` for the
+type of the combined values. 
 """
 function combine_values(x::AbstractIndex, y::AbstractIndex)
     return combine_values(promote_values_rule(x, y), values(x), values(y))
@@ -32,8 +43,10 @@ combine_values(::Type{T}, x, y) where {T<:AbstractUnitRange} = T(x)
 """
     combine_keys(x::AbstractIndex, y::AbstractIndex)
 
-Returns the combined keys of `x` and `y`. Customize behavior for combining
-subtypes of `AbstractIndex` by overloading this method.
+Returns the combination of the keys of `x` and `y`, creating a new index. New
+subtypes of `AbstractIndex` may implement a unique `combine_keys` method if 
+needed. Default behavior is to use the return of `promote_rule(x, y)` for the
+type of the combined keys. 
 """
 function combine_keys(x::AbstractIndex, y::AbstractIndex)
     return combine_keys(promote_keys_rule(x, y),keys(x), keys(y))
@@ -53,110 +66,41 @@ function combine_keys(::Type{T}, x, y) where {T<:Union{StepRangeLen,AbstractStep
 end
 combine_keys(::Type{T}, x, y) where {T<:AbstractVector} = copy(x)
 
-###
-### vcat_indices
-###
-function vcat_indices(x::Index, y::Index)
-    return Index{combine_names(x, y)}(vcat_keys(x, y), vcat_values(x, y))
-end
-vcat_indices(x::AbstractIndex, y::AbstractVector) = vcat_indices(promote(x, y)...)
-vcat_indices(x::AbstractVector, y::AbstractIndex) = vcat_indices(promote(x, y)...)
+"""
+    combine_names(a, b)
 
-###
-### append_indices!
-###
-function append_indices(x::Index, y::Index)
-    return Index{combine_names(x, y)}(append_keys(x, y), append_values(x, y))
-end
-append_indices(x::AbstractIndex, y::AbstractVector) = append_indices(promote(x, y)...)
-append_indices(x::AbstractVector, y::AbstractIndex) = append_indices(promote(x, y)...)
+Returns the combined name of `a` and `b`. The standard rules are:
 
-###
-### make_unique - Adapted from DataFrames.jl
-###
-function make_unique!(names::AbstractVector{K}, src::AbstractVector{K}; makeunique::Bool=false) where {K}
-    if length(names) == length(src)
-        throw(ArgumentError("Length of src doesn't match length of names."))
-    end
-    seen = Set{K}()
-    dups = Int[]
-    for i in eachindex(names)
-        name = @inbounds(src[i])
-        if in(name, seen)
-            push!(dups, i)
-        else
-            names[i] = @inbounds(src[i])
-            push!(seen, name)
-        end
-    end
+* nothing + nothing = name
+* nothing + name = name
+* name + nothing = name
+* name1 + name2 = name1
 
-    if length(dups) > 0
-        if !makeunique
-            dupstr = join(string.(':', unique(src[dups])), ", ", " and ")
-            msg = "Duplicate variable names: $dupstr. Pass makeunique=true " *
-                  "to make them unique using a suffix automatically."
-            throw(ArgumentError(msg))
-        end
-    end
-    return _make_unique!(names, dups, seen)
-end
+## Examples
+```
+julia> a, b, n, = Index{:a}(1:10), Index{:b}(1:10), Index(1:10);
 
-function _make_unique!(names::AbstractVector{Symbol}, dups, seen)
-    for i in dups
-        nm = src[i]
-        k = 1
-        while true
-            newnm = Symbol("$(nm)_$k")
-            if !in(newnm, seen)
-                names[i] = newnm
-                push!(seen, newnm)
-                break
-            end
-            k += 1
-        end
-    end
+julia> combine_names(a, b)
+:a
 
-    return names
-end
+julia> combine_names(a, n)
+:a
 
-function _make_unique!(names::AbstractVector{T}, dups, seen) where {T<:AbstractString}
-    for i in dups
-        nm = src[i]
-        k = 1
-        while true
-            newnm = "$(nm)_$k"
-            if !in(newnm, seen)
-                names[i] = newnm
-                push!(seen, newnm)
-                break
-            end
-            k += 1
-        end
-    end
+julia> combine_names(b, n)
+:b
 
-    return names
-end
+julia> combine_names(n, n)
 
-function _make_unique!(names::AbstractVector{T}, dups, seen) where {T<:Number}
-    base_num = T(round(maximum(names), RoundUp, sigdigits=1))
-    for i in dups
-        nm = src[i]
-        k = 1
-        while true
-            newnm = T + nm
-            if !in(newnm, seen)
-                names[i] = newnm
-                push!(seen, newnm)
-                break
-            end
-            k += 1
-        end
-    end
+julia> combine_names(b, a)
+:b
+```
+"""
+combine_names(a::Union{Symbol,Nothing}, b::AbstractIndex) = combine_names(a, dimnames(b))
+combine_names(a::AbstractIndex, b::Union{Symbol,Nothing}) = combine_names(dimnames(a), b)
+combine_names(a::AbstractIndex, b::AbstractIndex) = combine_names(dimnames(a), dimnames(b))
 
-    return names
-end
+combine_names(a::Symbol, b::Symbol) = a
+combine_names(::Nothing, b::Symbol) = b
+combine_names(a::Symbol, ::Nothing) = a
+combine_names(::Nothing, ::Nothing) = nothing
 
-
-function make_unique(names::AbstractVector{Symbol}; makeunique::Bool=false)
-    make_unique!(similar(names), names, makeunique=makeunique)
-end

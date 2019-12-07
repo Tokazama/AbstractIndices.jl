@@ -161,6 +161,11 @@ Base.parentindices(x::IndicesArray) = axes(parent(x))
 parent_type(::T) where {T<:AbstractArray} = axes_type(T)
 parent_type(::Type{IndicesArray{T,N,P,I}}) where {T,N,P,I} = P
 
+function Base.empty!(a::IndicesArray)
+    empty!(axes(a, 1))
+    empty!(parent(a))
+    return a
+end
 ###
 ### Utilities
 ###

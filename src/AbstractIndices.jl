@@ -40,15 +40,16 @@ import Base: OneTo, tail, show, values, keys, @propagate_inbounds
 
 export AbstractIndex,
        Index,
+       SimpleIndex,
        IndicesArray,
        IndicesMatrix,
        IndicesVector,
        # methods
-       find_axes,
        filter_axes,
        dimnames,
+       drop_axes,
+       reindex,
        to_dims,
-       to_dim,
        # reexports
        mrange,
        srange,
@@ -75,14 +76,11 @@ include("mutate.jl")
 include("setindex.jl")
 =#
 
-include("param_checks.jl")
 
 include("IndexCore/IndexCore.jl")
 include("IndicesArray/IndicesArray.jl")
 
 include("similar.jl")
-
-include("checkbounds.jl")
 
 include("to_indices.jl")
 include("getindex.jl")

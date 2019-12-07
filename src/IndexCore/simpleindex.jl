@@ -5,6 +5,9 @@ struct SimpleIndex{name,V,Vs<:AbstractUnitRange{V}} <: AbstractIndex{name,V,V,Vs
     _kv::Vs
 end
 
+SimpleIndex(vs) = SimpleIndex{nothing}(vs)
+SimpleIndex{name}(vs) where {name} = SimpleIndex{name,eltype(vs),typeof(vs)}(vs)
+
 ###
 ### Interface
 ###
@@ -12,12 +15,6 @@ end
 Base.values(si::SimpleIndex) = getfield(si, :_kv)
 
 Base.keys(si::SimpleIndex) = getfield(si, :_kv)
-
-unname(idx::SimpleIndex) = SimpleIndex(keys(idx))
-
-function unsafe_reindex(a::SimpleIndex{name}, inds::AbstractVector) where {name}
-    return SimpleIndex{name}(_reindex(values(a), inds))
-end
 
 ###
 ### pop
@@ -66,9 +63,9 @@ index_by(a::SimpleIndex{name,K}, i::AbstractVector{I}) where {name,K,I<:Integer}
 ### show
 ###
 function Base.show(io::IO, si::SimpleIndex)
-    if isnothing(dimnames(idx))
+    if isnothing(dimnames(si))
         print(io, "SimpleIndex($(keys(si)))")
     else
-        print(io, "SimpleIndex{$(dimnames(idx))}($(keys(idx)))")
+        print(io, "SimpleIndex{$(dimnames(si))}($(keys(si)))")
     end
 end

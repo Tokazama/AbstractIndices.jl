@@ -112,5 +112,5 @@ function StaticRanges.set_length!(a::AbstractIndex, len::Int)
     return a
 end
 
-StaticRanges.Size(::Type{T}) = {T<:AbstractIndex} = Size(values_type(T))
+StaticRanges.Size(::Type{T}) where {T<:AbstractIndex} = Size(values_type(T))
 

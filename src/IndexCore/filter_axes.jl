@@ -14,9 +14,4 @@ function _filter_axes(f, t::Tuple)
 end
 _filter_axes(f, ::Tuple{}) = ()
 
-function Base.empty!(a::IndicesArray)
-    empty!(axes(a, 1))
-    empty!(parent(a))
-    return a
-end
 

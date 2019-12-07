@@ -3,6 +3,15 @@
 
 Returns the appropriate axes for a measure that reduces dimensions along the
 dimensions `dims`.
+
+## Example
+```
+julia> reduce_axes((Index{:a}(1:4), Index{:b}(1:4)), 2)
+(Index{a}(1:4 => Base.OneTo(4)), Index{b}(1:1 => Base.OneTo(1)))
+
+julia> reduce_axes((Index{:a}(1:4), Index{:b}(1:4)), :a)
+(Index{a}(1:1 => Base.OneTo(1)), Index{b}(1:4 => Base.OneTo(4)))
+```
 """
 reduce_axes(x::AbstractArray, dims) = reduce_axes(axes(x), dims)
 reduce_axes(x, dims) = _reduce_axes(x, to_dims(x, dims))
@@ -19,8 +28,23 @@ Reduces axis `a` to single value. Allows custom index types to have custom
 behavior throughout reduction methods (e.g., sum, prod, etc.)
 
 See also: [`reduce_axes`](@ref)
+
+## Example
+```
+julia> reduce_axis(Index{:a}(1:4))
+Index{a}(1:1 => Base.OneTo(1))
+
+julia> reduce_axis(1:4)
+1:1
+```
 """
-reduce_axis(x::AbstractIndex) = unsafe_reindex(x, 1:1)
+function reduce_axis(x::AbstractIndex)
+    if isempty(x)
+        error("Cannot reduce empty index.")
+    else
+        return unsafe_reindex(x, 1:1)
+    end
+end
 reduce_axis(x::OneTo{T}) where {T} = OneTo(one(T))
 reduce_axis(x::OneToSRange{T}) where {T} = OneToSRange(one(T))
 reduce_axis(x::OneToMRange{T}) where {T} = OneToMRange(one(T))
