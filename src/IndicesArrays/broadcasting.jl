@@ -47,9 +47,10 @@ unwrap_broadcasted(x) = x
 
 # We need to implement copy because if the wrapper array type does not support setindex
 # then the `similar` based default method will not work
+# TODO: need to make this flexible to other IndicesArrays types
 function Broadcast.copy(bc::Broadcasted{IndicesArrayStyle{S}}) where S
     data = unwrap_broadcasted(bc)
-    return IndicesArray(copy(data), combine_axes(bc.args...))
+    return rebuild(IArray, copy(data), combine_axes(bc.args...))
 end
 # TODO: copyto! for broadcasting
 

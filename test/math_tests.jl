@@ -2,7 +2,7 @@
 @testset "math" begin
    @testset "$f" for f in (cor,cov)
         A = rand(3, 5)
-        Aindices = IndicesArray(A, ([:one, :two, :three], 2:6))
+        Aindices = IArray(A, ([:one, :two, :three], 2:6))
 
        @testset "matrix input, matrix result" begin
             findices = f(Aindices, dims=1)
@@ -23,7 +23,7 @@
         end
         @testset "vector input, scalar result" begin
             A = rand(4)
-            Aindices = IndicesArray(A, 2:5)
+            Aindices = IArray(A, 2:5)
 
             findices = f(Aindices)
             fbase = f(A)
@@ -36,7 +36,7 @@ end
 
 
 @testset "+" begin
-    a = IndicesArray(ones(3))
+    a = IArray(ones(3))
     @test +(a) == ones(3)
     @test +(a, a) == 2ones(3)
     @test +(a, a, a) == 3ones(3)
@@ -55,7 +55,7 @@ end
 end
 
 @testset "-" begin
-    a = IndicesArray(ones(3))
+    a = IArray(ones(3))
     @test -(a) == -ones(3)
     @test -(a, a) == -(parent(a), parent(a))
     @test -(a, a, a) == parent(a) - parent(a) - parent(a)

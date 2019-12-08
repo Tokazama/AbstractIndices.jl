@@ -1,7 +1,7 @@
-@testset "AbstractIndicesArrays" begin
+@testset "IArrays" begin
 
     A = rand(5,4,3)
-    Aoneto = IndicesArray(A);
+    Aoneto = IArray(A);
 
     r1 = range(.1, stop = .2, length=5)
     r2 = ["a", "b", "c", "d"]
@@ -11,8 +11,8 @@
     ind2 = Index(r2)
     ind3 = Index(r3)
 
-    Aindices = IndicesArray(A, (r1, r2, r3));
-    Anamed = IndicesArray(Aindices, (:a, :b, :c));
+    Aindices = IArray(A, (r1, r2, r3));
+    Anamed = IArray(Aindices, (:a, :b, :c));
 
    # TODO ensure ind3 = 1 is out of bounds error
     @testset "axes(A, [d])" begin
@@ -89,6 +89,7 @@
             @test length(filter_axes(i -> length(i) == length(axes(A,1)), A)) == 1
        end
 
+       #=
         @testset "find_axes" begin
             @test find_axes(allunique, A) == ntuple(i->i, ndims(A))
             @test find_axes(allunique, Anamed) == ntuple(i->i, ndims(A))
@@ -97,5 +98,6 @@
             @test find_axes(i -> i == axes(A,1), A) == (1,)
             @test find_axes(i -> i == axes(Anamed,1), Anamed) == (1,)
         end
+        =#
     end
 end

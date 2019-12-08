@@ -13,9 +13,9 @@
     pop!(x)
     @test x == z
 
-    x = IndicesArray(collect(1:10))
-    y = IndicesArray(collect(2:10))
-    z = IndicesArray(collect(1:9))
+    x = IArray(collect(1:10))
+    y = IArray(collect(2:10))
+    z = IArray(collect(1:9))
 
     @test popfirst(x) == y
     @test pop(x) == z
@@ -23,7 +23,7 @@
     popfirst!(x)
     @test x == y
 
-    x = IndicesArray(collect(1:10))
+    x = IArray(collect(1:10))
     pop!(x)
     @test x == z
 end

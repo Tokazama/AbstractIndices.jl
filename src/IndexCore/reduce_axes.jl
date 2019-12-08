@@ -14,11 +14,11 @@ julia> reduce_axes((Index{:a}(1:4), Index{:b}(1:4)), :a)
 ```
 """
 reduce_axes(x::AbstractArray, dims) = reduce_axes(axes(x), dims)
-reduce_axes(x, dims) = _reduce_axes(x, to_dims(x, dims))
-reduce_axes(x, dims::Colon) = ()
-_reduce_axes(x::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduce_axes(axs, (dims,))
-function _reduce_axes(axs::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D}
-    Tuple(map(i -> ifelse(in(i, dims), reduce_axis(axs[i]), axs[i]), 1:D))
+reduce_axes(x::Tuple, dims) = _reduce_axes(x, to_dims(x, dims))
+reduce_axes(x::Tuple, dims::Colon) = ()
+_reduce_axes(x::Tuple{Vararg{Any,D}}, dims::Int) where {D} = _reduce_axes(x, (dims,))
+function _reduce_axes(x::Tuple{Vararg{Any,D}}, dims::Tuple{Vararg{Int}}) where {D}
+    Tuple(map(i -> ifelse(in(i, dims), reduce_axis(x[i]), x[i]), 1:D))
 end
 
 """

@@ -3,9 +3,9 @@
     y = rand(3, 7)
     z = rand(7)
 
-    xi = IndicesArray(x, (mrange(2.0, 5.0), mrange(2.0, 4.0)))
-    yi = IndicesArray(y)
-    zi = IndicesArray(z)
+    xi = IArray(x, (mrange(2.0, 5.0), mrange(2.0, 4.0)))
+    yi = IArray(y)
+    zi = IArray(z)
 
     for (x_test, y_test) in ((xi, yi),
                              (yi, zi),

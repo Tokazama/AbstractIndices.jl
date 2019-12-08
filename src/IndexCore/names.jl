@@ -95,5 +95,5 @@ unname(x) = copy(x)
 unname(nt::NamedTuple{names}) where {names} = Tuple(nt)
 unname(x::Tuple) = unname.(x)
 unname(idx::Index) = Index(keys(idx), values(idx), AllUnique, LengthChecked)
-unname(idx::SimpleIndex) = SimpleIndex(keys(idx))
+unname(si::SimpleIndex) = SimpleIndex(keys(si))
 

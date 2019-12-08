@@ -18,7 +18,9 @@ using StaticRanges:
     ForwardOrdering,
     ReverseOrdering,
     ContinuousTrait,
+    Continuous,
     DiscreteTrait,
+    Discrete,
     similar_type,
     OneToRange,
     AbstractStepRange,
@@ -44,12 +46,28 @@ export AbstractIndex,
        IndicesArray,
        IndicesMatrix,
        IndicesVector,
+       IArray,
+       IMatrix,
+       IVector,
        # methods
-       filter_axes,
+       cat_axes,
+       cat_axis,
+       cat_names,
+       cat_keys,
+       cat_values,
+       covcor_axes,
        dimnames,
        drop_axes,
+       filter_axes,
+       hcat_axes,
+       matmul_axes,
+       permute_axes,
        reindex,
+       reshape_axes,
+       reshape_axes!,
        to_dims,
+       unname,
+       vcat_axes,
        # reexports
        mrange,
        srange,
@@ -64,37 +82,8 @@ export AbstractIndex,
 
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
-#=
-include("promote_shape.jl")
-
-include("checkindex.jl")
-
-include("iterate.jl")
-
-include("mutate.jl")
-
-include("setindex.jl")
-=#
-
-
 include("IndexCore/IndexCore.jl")
-include("IndicesArray/IndicesArray.jl")
-
-include("similar.jl")
-
-include("to_indices.jl")
-include("getindex.jl")
-
-include("operators.jl")
-include("matmul.jl")
-include("push_pop.jl")
-include("reduce.jl")
-include("permutedims.jl")
-include("dropdims.jl")
-include("math.jl")
-include("broadcasting.jl")
-include("show.jl")
-
+include("IndicesArrays/IndicesArrays.jl")
 include("LinearAlgebra/LinearAlgebra.jl")
 
 end

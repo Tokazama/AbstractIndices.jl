@@ -3,7 +3,7 @@
 
 Returns and index of the same type as `a` where the keys the new keys are
 constructed by indexing into the keys of `a` with `inds` and the values have the
-same starting value but a length matching `inds`. This is the final call 
+same starting value but a length matching `inds`.
 
 ## Examples
 ```

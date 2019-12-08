@@ -1,6 +1,6 @@
 @testset "reducedims" begin
     A = reshape(Vector(1:16), (4,4))
-    Aindices = IndicesArray(A, a = 2:5, b = [:one, :two, :three, :four])
+    Aindices = IArray(A, a = 2:5, b = [:one, :two, :three, :four])
 
     A1 = reduce(max, A, dims=1)
     A2 = reduce(max, A, dims=2)
@@ -18,7 +18,7 @@ end
 
 @testset "Base" begin
     A = [10 20; 31 40]
-    Aindices = IndicesArray(A, x = 2:3, y = [:one, :two])
+    Aindices = IArray(A, x = 2:3, y = [:one, :two])
 
     @testset "$f" for f in (sum, prod, maximum, minimum, extrema)
         @test f(A) == f(Aindices)
@@ -32,7 +32,7 @@ end
 
         #@test indexnames(f(Aindices; dims=:x)) == (:x, :y) == indexnames(f(Aindices; dims=1))
 
-        @test f([1, 4, 3]) == f(IndicesArray([1, 4, 3], (:vec,)))
+        @test f([1, 4, 3]) == f(IArray([1, 4, 3], (:vec,)))
 #        @test_throws UndefKeywordError f(nda)
 #        @test_throws UndefKeywordError f(a)
     end
@@ -40,7 +40,7 @@ end
     #= TODO sort
     @testset "sort!" begin
         A = [1 9; 7 3]
-        Anamed = IndicesArray(A, (:x, :y))
+        Anamed = IArray(A, (:x, :y))
 
         # Vector case
         veca = [1, 9, 7, 3]
@@ -63,7 +63,7 @@ end
     @testset "eachslice" begin
         slices = [[111 121; 211 221], [112 122; 212 222]]
         A = cat(slices...; dims=3)
-        Anamed = IndicesArrayArray(A, (:a, :b, :c))
+        Anamed = IArrayArray(A, (:a, :b, :c))
 
         @test (
             sum(eachslice(Anamed; dims=:c)) ==
@@ -87,7 +87,7 @@ end
 
     @testset "mapslices" begin
         A = [10 20; 31 40]
-        Anamed = IndicesArray(A, (:x, :y))
+        Anamed = IArray(A, (:x, :y))
 
         @test (
             mapslices(join, Anamed; dims=:x) ==
@@ -117,7 +117,7 @@ end
 
     @testset "mapreduce" begin
         A = [10 20; 31 40]
-        Aindices = IndicesArray(A, (:x, :y))
+        Aindices = IArray(A, (:x, :y))
 
         @test mapreduce(isodd, |, Aindices) == true == mapreduce(isodd, |, A)
         @test (mapreduce(isodd, |, Aindices; dims=:x) ==
@@ -134,7 +134,7 @@ end
 
     @testset "zero" begin
         A = [10 20; 31 40]
-        Aindices = IndicesArray(A, (:x, :y))
+        Aindices = IArray(A, (:x, :y))
 
         @test zero(Aindices) == [0 0; 0 0] == zero(A)
         #@test indexnames(zero(Aindices)) == (:x, :y)
@@ -142,7 +142,7 @@ end
 
     @testset "count" begin
         A = [true false; true true]
-        Aindices = IndicesArray(A, (:x, :y))
+        Aindices = IArray(A, (:x, :y))
 
         @test count(Aindices) == count(A) == 3
 #        @test_throws ErrorException count(nda; dims=:x)
@@ -152,7 +152,7 @@ end  # Base
 
 @testset "Statistics" begin
     A = [10 20; 30 40]
-    Aindices = IndicesArray(A, (:x, :y))
+    Aindices = IArray(A, (:x, :y))
     @testset "$f" for f in (mean, std, var, median)
         @test f(Aindices) == f(A)
         @test f(Aindices; dims=:x) == f(Aindices; dims=1) == f(A; dims=1)

@@ -1,6 +1,6 @@
 using AbstractIndices, Test, Statistics
 
-using AbstractIndices: combine, combine_keys, combine_values, combine_names
+using AbstractIndices: combine_index, combine_keys, combine_values, combine_names
 
 import Base: OneTo
 
@@ -12,10 +12,6 @@ include("abstractindex_tests.jl")
 include("broadcasting.jl")
 #include("indicesarray_tests.jl")
 include("reduce_tests.jl")
-include("pop_tests.jl")
+#include("pop_tests.jl") TODO
 
 
-#=
-include("traits.jl")
-include("math.jl")
-=#

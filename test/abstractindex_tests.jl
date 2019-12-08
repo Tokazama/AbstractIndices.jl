@@ -1,5 +1,3 @@
-using AbstractIndices: combine
-
 @testset "AbstractIndex" begin
     float_offset = Index(2.0:11.0)
     static_index = Index(UnitSRange(1, 10))
