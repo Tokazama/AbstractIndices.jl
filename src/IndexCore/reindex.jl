@@ -6,7 +6,7 @@ constructed by indexing into the keys of `a` with `inds` and the values have the
 same starting value but a length matching `inds`.
 
 ## Examples
-```
+```jldoctest
 julia> x, y, z = Index(1:10, 2:11), Index(1:10), SimpleIndex(1:10);
 
 julia> reindex(x, collect(1:2:10))

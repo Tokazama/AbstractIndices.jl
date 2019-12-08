@@ -6,7 +6,7 @@ then a `Symbol` will be returned if it has a name and `nothing` will be returned
 if it doesn't.
 
 ## Examples
-```
+```jldoctest
 julia> dimnames(Index{:a}(1:10))
 :a
 
@@ -33,7 +33,7 @@ or converted to one. If `dims` is a `Symbol` this returns the dimension correspo
 to the provided name. If the named dimension is not present an error is returned.
 
 ## Examples
-```
+```jldoctest
 julia> axs = (Index{:a}(1:10), Index{:b}(1:10), Index(1:10));
 
 julia> to_dims(axs, :a)
@@ -78,7 +78,7 @@ Remove the name from a `x`. If `x` doesn't have a name the same instance of `x`
 is returned.
 
 ## Examples
-```
+```jldoctest
 julia> aidx, nidx, uidx, = Index{:a}(1:10), Index(1:10), 1:10
 
 julia> unname(aidx)

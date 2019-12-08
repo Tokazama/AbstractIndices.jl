@@ -1,8 +1,7 @@
 """
     AbstractIndex
 
-An `AbstractVector` subtype optimized for indexing. See ['asindex'](@ref) for
-detailed examples describing its behavior.
+An `AbstractVector` subtype optimized for indexing.
 """
 abstract type AbstractIndex{name,K,V<:Integer,Ks<:AbstractVector{K},Vs<:AbstractUnitRange{V}} <: AbstractUnitRange{V} end
 

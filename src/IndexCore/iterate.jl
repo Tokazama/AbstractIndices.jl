@@ -1,12 +1,5 @@
 
-function iterate(a::AbstractIndex)
-    if isempty(a)
-        return nothing
-    else
-        return first(a), 1
-    end
-end
-
+Base.iterate(a::AbstractIndex) = isempty(a) ? nothing : (first(a), 1)
 function Base.iterate(a::AbstractIndex, state::Int)
     if state < length(a)
         newstate = state + 1
@@ -15,3 +8,4 @@ function Base.iterate(a::AbstractIndex, state::Int)
         return nothing
     end
 end
+

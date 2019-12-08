@@ -77,7 +77,7 @@ Returns the combined name of `a` and `b`. The standard rules are:
 * name1 + name2 = name1
 
 ## Examples
-```
+```jldoctest
 julia> a, b, n, = Index{:a}(1:10), Index{:b}(1:10), Index(1:10);
 
 julia> combine_names(a, b)

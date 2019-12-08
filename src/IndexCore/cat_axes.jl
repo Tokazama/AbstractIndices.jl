@@ -4,7 +4,7 @@
 Returns the appropriate axes for `vcat(x, y)`.
 
 ## Examples
-```
+```jldoctest
 julia> vcat_axes((Index{:a}(1:2), Index{:b}(1:4)), (Index{:z}(1:2), Index(1:4)))
 (Index{a}(1:4 => Base.OneTo(4)), Index{b}(1:4 => Base.OneTo(4)))
 
@@ -12,6 +12,7 @@ julia> a, b = [1 2 3 4 5], [6 7 8 9 10; 11 12 13 14 15];
 
 julia> vcat_axes(a, b) == axes(vcat(a, b))
 true
+```
 """
 vcat_axes(x::AbstractArray, y::AbstractArray) = vcat_axes(axes(x), axes(y))
 function vcat_axes(x::Tuple, y::Tuple)
@@ -24,7 +25,7 @@ end
 Returns the appropriate axes for `hcat(x, y)`.
 
 ## Examples
-```
+```jldoctest
 julia> hcat_axes((Index{:a}(1:4), Index{:b}(1:2)), (Index{:z}(1:4), Index(1:2)))
 (Index{a}(1:4 => Base.OneTo(4)), Index{b}(1:4 => Base.OneTo(4)))
 
@@ -32,6 +33,7 @@ julia> a, b = [1; 2; 3; 4; 5], [6 7; 8 9; 10 11; 12 13; 14 15]
 
 julia> hcat_axes(a, b) == axes(hcat(a, b))
 true
+```
 """
 hcat_axes(x::AbstractArray, y::AbstractArray) = hcat_axes(axes(x), axes(y))
 function hcat_axes(x::Tuple, y::Tuple)
@@ -47,16 +49,17 @@ Returns the appropriate axes for `cat(x, y; dims)`. If any of `dims` are names
 then they should refer to the dimensions of `x`.
 
 ## Examples
-```
+```jldoctest
 julia> cat_axes((Index{:a}(1:4), Index{:b}(1:2)), (Index{:z}(1:4), Index(1:2)), (:a, :b))
 (Index{a}(1:8 => Base.OneTo(8)), Index{b}(1:4 => Base.OneTo(4)))
+```
 """
 
 """
     cat_axis(x, y)
 
-Returns the concatenation of the axes `x` and `y`. New subtypes of
-`AbstractIndex` must implement a unique `cat_axis` method.
+Returns the concatenation of the axes `x` and `y`. New subtypes of `AbstractIndex`
+must implement a unique `cat_axis` method.
 """
 function cat_axis(x::Index, y)
     return Index{cat_names(x, y)}(cat_keys(x, y), cat_values(x, y))
@@ -68,6 +71,10 @@ cat_axis(x, y) = cat_values(x, y)
 
 """
     cat_keys(x, y)
+
+Returns the appropriate keys of the `x` and `y` index within the operation `cat_axis(x, y)`
+
+See also: [`cat_axis`](@ref)
 """
 cat_keys(x, y) = _cat_keys(keys(x), y)
 _cat_keys(x, y) = __cat_keys(Continuity(x), x, y)
@@ -77,7 +84,7 @@ __cat_keys(::DiscreteTrait, x, y) = make_unique(x, keys(y))
 """
     cat_values(x, y)
 
-Returns the appropriate values of and index within the operation `vcat_axis(x, y)`
+Returns the appropriate values of the `x` and `y` index within the operation `cat_axis(x, y)`
 
 See also: [`cat_axis`](@ref)
 """

@@ -6,7 +6,7 @@ must be unique integers or symbols corresponding to the dimensions or names of
 dimensions of `x`.
 
 ## Examples
-```
+```jldoctest
 julia> axs = (Index{:a}(1:10), Index{:b}(1:10), Index(1:10));
 
 julia> drop_axes(axs, :a)

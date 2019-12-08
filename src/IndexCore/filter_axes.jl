@@ -4,7 +4,7 @@
 Return the axes of `a`, removing those for which `f` is false. The function `f`
 is passed one argument.
 
-```
+```jldoctest
 julia> axs = (Index{:a}(1:10), Index{:b}(1:10), Index(1:10));
 
 julia> filter_axes(x -> dimnames(x) == :a, axs)

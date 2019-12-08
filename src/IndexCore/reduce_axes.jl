@@ -5,7 +5,7 @@ Returns the appropriate axes for a measure that reduces dimensions along the
 dimensions `dims`.
 
 ## Example
-```
+```jldoctest
 julia> reduce_axes((Index{:a}(1:4), Index{:b}(1:4)), 2)
 (Index{a}(1:4 => Base.OneTo(4)), Index{b}(1:1 => Base.OneTo(1)))
 
@@ -30,7 +30,7 @@ behavior throughout reduction methods (e.g., sum, prod, etc.)
 See also: [`reduce_axes`](@ref)
 
 ## Example
-```
+```jldoctest
 julia> reduce_axis(Index{:a}(1:4))
 Index{a}(1:1 => Base.OneTo(1))
 

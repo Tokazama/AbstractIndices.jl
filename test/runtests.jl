@@ -1,6 +1,6 @@
 using AbstractIndices, Test, Statistics
 
-using AbstractIndices: combine_index, combine_keys, combine_values, combine_names
+using AbstractIndices.IndexCore
 
 import Base: OneTo
 

@@ -50,24 +50,8 @@ export AbstractIndex,
        IMatrix,
        IVector,
        # methods
-       cat_axes,
-       cat_axis,
-       cat_names,
-       cat_keys,
-       cat_values,
-       covcor_axes,
        dimnames,
-       drop_axes,
-       filter_axes,
-       hcat_axes,
-       matmul_axes,
-       permute_axes,
-       reindex,
-       reshape_axes,
-       reshape_axes!,
-       to_dims,
        unname,
-       vcat_axes,
        # reexports
        mrange,
        srange,
@@ -83,6 +67,8 @@ export AbstractIndex,
 const TupOrVec{T} = Union{Tuple{Vararg{T}},AbstractVector{T}}
 
 include("IndexCore/IndexCore.jl")
+using .IndexCore
+
 include("IndicesArrays/IndicesArrays.jl")
 include("LinearAlgebra/LinearAlgebra.jl")
 

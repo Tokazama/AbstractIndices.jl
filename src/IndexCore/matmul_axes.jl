@@ -5,7 +5,7 @@ Returns the appropriate axes for the return of `a * b` where `a` and `b` are a
 vector or matrix.
 
 ## Examples
-```
+```jldoctest
 julia> axs2, axs1 = (Index{:b}(1:10), Index(1:10)), (Index{:a}(1:10),);
 
 julia> matmul_axes(axs2, axs2)

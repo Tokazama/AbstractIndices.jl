@@ -5,7 +5,7 @@
 Returns axes of `x` in the order of `p`.
 
 ## Examples
-```
+```jldoctest
 julia> permute_axes((Index{:a}(1:10), Index{:b}(1:10), Index(1:10)), (:b, 3, :a))
 (Index{a}(1:10 => Base.OneTo(10)), Index(1:10 => Base.OneTo(10)), Index{b}(1:10 => Base.OneTo(10)))
 ```
@@ -20,7 +20,7 @@ permute_axes(x::NTuple{N,Any}, p::NTuple{N,Int}) where {N} = map(i -> getfield(x
 Returns the permuted axes of `x` as axes of size 1 × length(x)
 
 ## Examples
-```
+```jldoctest
 julia> permute_axes((Index(1:4),))
 (Index(1:1 => Base.OneTo(1)), Index(1:4 => Base.OneTo(4)))
 ```
@@ -36,7 +36,7 @@ of the matrix. Differs from LinearAlgebra's transpose in that the operation is
 not recursive.
 
 ## Examples
-```
+```jldoctest
 julia> permute_axes((Index{:a}(1:4), Index{:b}(1:4)))
 (Index{b}(1:4 => Base.OneTo(4)), Index{a}(1:4 => Base.OneTo(4)))
 ```
